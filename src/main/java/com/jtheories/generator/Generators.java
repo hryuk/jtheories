@@ -1,4 +1,4 @@
-package com.jtheories.generators;
+package com.jtheories.generator;
 
 import com.jtheories.random.SourceOfRandom;
 import io.github.classgraph.ClassGraph;
@@ -18,7 +18,7 @@ public class Generators {
                      new ClassGraph()
                              .enableAnnotationInfo()
                              .scan()) {
-            ClassInfoList annotatedClasses = scanResult.getClassesImplementing("com.jtheories.generators.Generator");
+            ClassInfoList annotatedClasses = scanResult.getClassesImplementing("com.jtheories.generator.Generator");
             for (ClassInfo annotatedClass : annotatedClasses) {
                 Method generateMethod = annotatedClass.loadClass().getDeclaredMethod("generate", SourceOfRandom.class);
                 if(generateMethod.getReturnType().equals(generatedType)) {
@@ -32,8 +32,8 @@ public class Generators {
         }
     }
 
-    public static <T> T gen(Class<T> generatedType, SourceOfRandom random){
+    public static <T> T gen(Class<T> generatedType){
         Generator<T> generator =getGenerator(generatedType);
-        return generator.generate(random);
+        return generator.generate(SOURCE_OF_RANDOM);
     }
 }

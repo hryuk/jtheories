@@ -1,17 +1,16 @@
 package com.jtheories.examples;
 
-import com.jtheories.generators.Generators;
-import com.jtheories.generators.processor.Generator;
+import com.jtheories.generator.processor.Generator;
 import com.jtheories.random.SourceOfRandom;
-
+import java.util.UUID;
+import static com.jtheories.generator.Generators.gen;
 
 @Generator
 public interface ProductGenerator {
-    default Product generate(SourceOfRandom random) {
+    default Product generate(SourceOfRandom sourceOfRandom) {
         return new Product(
-                "id",
-                Generators.gen(String.class,random),
-                394L);
-
+                gen(UUID.class),
+                gen(String.class),
+                gen(Long.class));
     }
 }

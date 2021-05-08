@@ -1,4 +1,4 @@
-package com.jtheories.generators;
+package com.jtheories.generator;
 
 import com.jtheories.random.SourceOfRandom;
 

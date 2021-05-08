@@ -1,6 +1,6 @@
 package com.jtheories.junit;
 
-import com.jtheories.generators.Generators;
+import com.jtheories.generator.Generators;
 import com.jtheories.random.SourceOfRandom;
 import io.github.classgraph.*;
 import org.junit.jupiter.api.extension.*;
@@ -20,7 +20,7 @@ public class JTheories implements ParameterResolver {
                      new ClassGraph()
                              .enableAnnotationInfo()
                              .scan()) {
-            ClassInfoList annotatedClasses = scanResult.getClassesImplementing("com.jtheories.generators.Generator");
+            ClassInfoList annotatedClasses = scanResult.getClassesImplementing("com.jtheories.generator.Generator");
             for (ClassInfo annotatedClass : annotatedClasses) {
                 generators.add(annotatedClass.loadClass().getConstructor().newInstance());
                 Method generateMethod = annotatedClass.loadClass().getDeclaredMethod("generate",SourceOfRandom.class);
@@ -62,6 +62,7 @@ public class JTheories implements ParameterResolver {
         } catch (IllegalAccessException e) {
             throw new RuntimeException(String.format("Could not access generate() method on generator %s",generator.getClass().getName()));
         } catch (InvocationTargetException e) {
+            e.printStackTrace();
             throw new RuntimeException(String.format("Could not call generate() method on generator %s",generator.getClass().getName()));
         }
 
