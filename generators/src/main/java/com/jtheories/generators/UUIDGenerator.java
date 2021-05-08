@@ -1,7 +1,9 @@
 package com.jtheories.generators;
 
-import com.jtheories.generator.processor.Generator;
-import com.jtheories.random.SourceOfRandom;
+
+
+import com.jtheories.core.generator.processor.Generator;
+import com.jtheories.core.random.SourceOfRandom;
 
 import java.util.UUID;
 

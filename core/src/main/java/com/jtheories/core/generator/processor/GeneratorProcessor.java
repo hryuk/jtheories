@@ -1,7 +1,7 @@
-package com.jtheories.generator.processor;
+package com.jtheories.core.generator.processor;
 
 import com.google.auto.service.AutoService;
-import com.jtheories.generator.Generator;
+import com.jtheories.core.generator.Generator;
 import com.squareup.javapoet.*;
 
 import javax.annotation.processing.*;
@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @SupportedAnnotationTypes(
-        "com.jtheories.generator.processor.Generator")
+        "com.jtheories.core.generator.processor.Generator")
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 @AutoService(Processor.class)
 public class GeneratorProcessor extends AbstractProcessor {

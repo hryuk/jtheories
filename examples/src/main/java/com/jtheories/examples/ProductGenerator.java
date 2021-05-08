@@ -1,9 +1,11 @@
 package com.jtheories.examples;
 
-import com.jtheories.generator.processor.Generator;
-import com.jtheories.random.SourceOfRandom;
+import com.jtheories.core.generator.processor.Generator;
+import com.jtheories.core.random.SourceOfRandom;
+
 import java.util.UUID;
-import static com.jtheories.generator.Generators.gen;
+
+import static com.jtheories.core.generator.Generators.gen;
 
 @Generator
 public interface ProductGenerator {

@@ -1,6 +1,6 @@
 package com.jtheories.examples;
 
-import com.jtheories.junit.JTheories;
+import com.jtheories.core.junit.JTheories;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.ExtendWith;

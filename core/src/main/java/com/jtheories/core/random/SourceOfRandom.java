@@ -1,4 +1,4 @@
-package com.jtheories.random;
+package com.jtheories.core.random;
 
 import java.util.Random;
 

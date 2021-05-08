@@ -1,4 +1,4 @@
-package com.jtheories.generator.processor;
+package com.jtheories.core.generator.processor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

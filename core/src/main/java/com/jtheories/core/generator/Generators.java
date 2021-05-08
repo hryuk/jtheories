@@ -1,6 +1,6 @@
-package com.jtheories.generator;
+package com.jtheories.core.generator;
 
-import com.jtheories.random.SourceOfRandom;
+import com.jtheories.core.random.SourceOfRandom;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
@@ -18,7 +18,7 @@ public class Generators {
                      new ClassGraph()
                              .enableAnnotationInfo()
                              .scan()) {
-            ClassInfoList annotatedClasses = scanResult.getClassesImplementing("com.jtheories.generator.Generator");
+            ClassInfoList annotatedClasses = scanResult.getClassesImplementing("com.jtheories.core.generator.Generator");
             for (ClassInfo annotatedClass : annotatedClasses) {
                 Method generateMethod = annotatedClass.loadClass().getDeclaredMethod("generate", SourceOfRandom.class);
                 if(generateMethod.getReturnType().equals(generatedType)) {

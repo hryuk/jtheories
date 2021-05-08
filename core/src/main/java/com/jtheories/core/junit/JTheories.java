@@ -1,7 +1,7 @@
-package com.jtheories.junit;
+package com.jtheories.core.junit;
 
-import com.jtheories.generator.Generators;
-import com.jtheories.random.SourceOfRandom;
+import com.jtheories.core.generator.Generators;
+import com.jtheories.core.random.SourceOfRandom;
 import io.github.classgraph.*;
 import org.junit.jupiter.api.extension.*;
 
@@ -20,10 +20,10 @@ public class JTheories implements ParameterResolver {
                      new ClassGraph()
                              .enableAnnotationInfo()
                              .scan()) {
-            ClassInfoList annotatedClasses = scanResult.getClassesImplementing("com.jtheories.generator.Generator");
+            ClassInfoList annotatedClasses = scanResult.getClassesImplementing("com.jtheories.core.generator.Generator");
             for (ClassInfo annotatedClass : annotatedClasses) {
                 generators.add(annotatedClass.loadClass().getConstructor().newInstance());
-                Method generateMethod = annotatedClass.loadClass().getDeclaredMethod("generate",SourceOfRandom.class);
+                Method generateMethod = annotatedClass.loadClass().getDeclaredMethod("generate", SourceOfRandom.class);
                 availableGenerators.add(generateMethod.getReturnType());
             }
         } catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
@@ -58,7 +58,7 @@ public class JTheories implements ParameterResolver {
         }
 
         try {
-            return generateMethod.invoke(generator,Generators.SOURCE_OF_RANDOM);
+            return generateMethod.invoke(generator, Generators.SOURCE_OF_RANDOM);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(String.format("Could not access generate() method on generator %s",generator.getClass().getName()));
         } catch (InvocationTargetException e) {
