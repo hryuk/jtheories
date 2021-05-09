@@ -1,7 +1,5 @@
 package com.jtheories.junit;
 
-import com.jtheories.core.generator.Generators;
-import com.jtheories.core.random.SourceOfRandom;
 import io.github.classgraph.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -20,8 +18,7 @@ public class JTheoriesExtension implements ParameterResolver {
           scanResult.getClassesImplementing("com.jtheories.core.generator.Generator");
       for (ClassInfo annotatedClass : annotatedClasses) {
         generators.add(annotatedClass.loadClass().getConstructor().newInstance());
-        Method generateMethod =
-            annotatedClass.loadClass().getDeclaredMethod("generate", SourceOfRandom.class);
+        Method generateMethod = annotatedClass.loadClass().getDeclaredMethod("generate");
         availableGenerators.add(generateMethod.getReturnType());
       }
     } catch (NoSuchMethodException
@@ -51,7 +48,7 @@ public class JTheoriesExtension implements ParameterResolver {
                 gen -> {
                   try {
                     return gen.getClass()
-                        .getDeclaredMethod("generate", SourceOfRandom.class)
+                        .getDeclaredMethod("generate")
                         .getReturnType()
                         .equals(parameterContext.getParameter().getType());
                   } catch (NoSuchMethodException e) {
@@ -63,7 +60,7 @@ public class JTheoriesExtension implements ParameterResolver {
 
     Method generateMethod;
     try {
-      generateMethod = generator.getClass().getDeclaredMethod("generate", SourceOfRandom.class);
+      generateMethod = generator.getClass().getDeclaredMethod("generate");
     } catch (NoSuchMethodException e) {
       throw new RuntimeException(
           String.format(
@@ -71,14 +68,13 @@ public class JTheoriesExtension implements ParameterResolver {
     }
 
     try {
-      return generateMethod.invoke(generator, Generators.SOURCE_OF_RANDOM);
+      return generateMethod.invoke(generator);
     } catch (IllegalAccessException e) {
       throw new RuntimeException(
           String.format(
               "Could not access generate() method on generator %s",
               generator.getClass().getName()));
     } catch (InvocationTargetException e) {
-      e.printStackTrace();
       throw new RuntimeException(
           String.format(
               "Could not call generate() method on generator %s", generator.getClass().getName()));

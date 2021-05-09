@@ -1,14 +1,13 @@
 package com.jtheories.examples;
 
-import static com.jtheories.core.generator.Generators.gen;
-
 import com.jtheories.core.generator.processor.Generator;
-import com.jtheories.core.random.SourceOfRandom;
+import com.jtheories.generators.number.Positive;
+
 import java.util.UUID;
 
 @Generator
 public interface ProductGenerator {
-  default Product generate(SourceOfRandom sourceOfRandom) {
-    return new Product(gen(UUID.class), gen(String.class), gen(Long.class));
+  default Product generate(UUID id, String name, @Positive Long price) {
+    return new Product(id, name, price);
   }
 }

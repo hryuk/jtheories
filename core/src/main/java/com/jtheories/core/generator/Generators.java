@@ -13,15 +13,15 @@ public class Generators {
   public static final SourceOfRandom SOURCE_OF_RANDOM = new SourceOfRandom();
 
   public static <T> Generator<T> getGenerator(Class<T> generatedType) {
-    try (ScanResult scanResult = new ClassGraph().enableAnnotationInfo().scan()) {
-      ClassInfoList annotatedClasses =
+    try (ScanResult scanResult = new ClassGraph().enableClassInfo().scan()) {
+      ClassInfoList arbitraryGenerators =
           scanResult.getClassesImplementing("com.jtheories.core.generator.Generator");
-      for (ClassInfo annotatedClass : annotatedClasses) {
-        Method generateMethod =
-            annotatedClass.loadClass().getDeclaredMethod("generate", SourceOfRandom.class);
+
+      for (ClassInfo arbitraryGenerator : arbitraryGenerators) {
+        Method generateMethod = arbitraryGenerator.loadClass().getDeclaredMethod("generate");
         if (generateMethod.getReturnType().equals(generatedType)) {
           //noinspection unchecked
-          return (Generator<T>) annotatedClass.loadClass().getConstructor().newInstance();
+          return (Generator<T>) arbitraryGenerator.loadClass().getConstructor().newInstance();
         }
       }
 
@@ -38,6 +38,6 @@ public class Generators {
 
   public static <T> T gen(Class<T> generatedType) {
     Generator<T> generator = getGenerator(generatedType);
-    return generator.generate(SOURCE_OF_RANDOM);
+    return generator.generate();
   }
 }
