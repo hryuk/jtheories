@@ -59,9 +59,8 @@ public class GeneratorProcessor extends AbstractProcessor {
 
         if (defaultMethod.getParameters().size() != 1) {
           fatal(
-              String.format(
-                  "Default generate() definition receiving more than one parameter in %s",
-                  annotatedInterface.getSimpleName()));
+              "Default generate() definition receiving more than one parameter in %s",
+              annotatedInterface.getSimpleName());
         }
 
         AnnotationSpec generatedAnnotaion =

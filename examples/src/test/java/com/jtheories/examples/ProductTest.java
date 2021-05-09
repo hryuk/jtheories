@@ -1,12 +1,12 @@
 package com.jtheories.examples;
 
-import com.jtheories.core.junit.JTheories;
 import java.util.UUID;
+import com.jtheories.junit.JTheoriesExtension;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(JTheories.class)
+@ExtendWith(JTheoriesExtension.class)
 class ProductTest {
 
   @RepeatedTest(200)

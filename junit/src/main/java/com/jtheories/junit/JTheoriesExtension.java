@@ -1,4 +1,4 @@
-package com.jtheories.core.junit;
+package com.jtheories.junit;
 
 import com.jtheories.core.generator.Generators;
 import com.jtheories.core.random.SourceOfRandom;
@@ -9,12 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.extension.*;
 
-public class JTheories implements ParameterResolver {
+public class JTheoriesExtension implements ParameterResolver {
 
   private final List<Class<?>> availableGenerators = new ArrayList<>();
   private final List<Object> generators = new ArrayList<>();
 
-  public JTheories() {
+  public JTheoriesExtension() {
     try (ScanResult scanResult = new ClassGraph().enableAnnotationInfo().scan()) {
       ClassInfoList annotatedClasses =
           scanResult.getClassesImplementing("com.jtheories.core.generator.Generator");

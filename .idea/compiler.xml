@@ -8,8 +8,9 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="generators" />
-        <module name="examples" />
         <module name="core" />
+        <module name="junit" />
+        <module name="examples" />
       </profile>
     </annotationProcessing>
   </component>

@@ -46,6 +46,7 @@
         <module>core</module>
         <module>generators</module>
         <module>examples</module>
+        <module>junit</module>
     </modules>
 
     <build>

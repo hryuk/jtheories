@@ -20,12 +20,13 @@ public class Generators {
         Method generateMethod =
             annotatedClass.loadClass().getDeclaredMethod("generate", SourceOfRandom.class);
         if (generateMethod.getReturnType().equals(generatedType)) {
+          //noinspection unchecked
           return (Generator<T>) annotatedClass.loadClass().getConstructor().newInstance();
         }
       }
 
       throw new RuntimeException(
-          String.format("Could not find generator for %s", generatedType.getClass().getName()));
+          String.format("Could not find generator for %s", generatedType.getName()));
     } catch (NoSuchMethodException
         | IllegalAccessException
         | InstantiationException
