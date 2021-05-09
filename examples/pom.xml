@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.jtheories</groupId>
             <artifactId>core</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
