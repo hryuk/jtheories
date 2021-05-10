@@ -2,15 +2,16 @@ package com.jtheories.core.generator.processor;
 
 import com.google.auto.service.AutoService;
 import com.jtheories.core.generator.Generator;
+import com.jtheories.core.generator.Generators;
 import com.squareup.javapoet.*;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Collection;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
@@ -31,7 +32,6 @@ public class GeneratorProcessor extends AbstractProcessor {
 
   void fatal(String format, Object... args) {
     this.messager.printMessage(Diagnostic.Kind.ERROR, String.format(format, args));
-    throw new RuntimeException();
   }
 
   @Override
@@ -50,31 +50,81 @@ public class GeneratorProcessor extends AbstractProcessor {
           annotatedElements.stream().map(TypeElement.class::cast).collect(Collectors.toList());
 
       for (TypeElement annotatedInterface : annotatedInterfaces) {
-        ExecutableElement defaultMethod =
+        List<ExecutableElement> defaultMethods =
             annotatedInterface.getEnclosedElements().stream()
                 .filter(e -> e.getKind() == ElementKind.METHOD)
                 .map(ExecutableElement.class::cast)
-                .findAny()
-                .orElseThrow();
+                .collect(Collectors.toList());
 
-        if (defaultMethod.getParameters().size() != 1) {
-          fatal(
-              "Default generate() definition receiving more than one parameter in %s",
-              annotatedInterface.getSimpleName());
+        List<MethodSpec> methods = new ArrayList<>();
+        for (ExecutableElement defaultMethod : defaultMethods) {
+
+          List<? extends VariableElement> parameters = defaultMethod.getParameters();
+          CodeBlock.Builder generatedCode = CodeBlock.builder();
+
+          List<CodeBlock> paramValues = new ArrayList<>();
+          for (VariableElement parameter : parameters) {
+            List<? extends AnnotationMirror> annotationMirrors = parameter.getAnnotationMirrors();
+            DeclaredType annotationSpec = null;
+            if (annotationMirrors.size() == 1) {
+              annotationSpec = annotationMirrors.get(0).getAnnotationType();
+            }
+            if (annotationSpec == null) {
+              generatedCode.addStatement(
+                  "$T generated_$N = $T.gen($T.class)",
+                  ClassName.get(parameter.asType()),
+                  ParameterSpec.get(parameter),
+                  ClassName.get(Generators.class),
+                  ClassName.get(parameter.asType()));
+            } else {
+              generatedCode.addStatement(
+                  "$T generated_$N = $T.gen($T.class, $T.class)",
+                  ClassName.get(parameter.asType()),
+                  ParameterSpec.get(parameter),
+                  ClassName.get(Generators.class),
+                  ClassName.get(parameter.asType()),
+                  ClassName.get(annotationSpec));
+            }
+
+            paramValues.add(CodeBlock.of("generated_$N", ParameterSpec.get(parameter)));
+          }
+
+          generatedCode.addStatement(
+              "return $T.super.$L($L)",
+              ClassName.get(annotatedInterface.asType()),
+              defaultMethod.getSimpleName(),
+              CodeBlock.join(paramValues, ", ").toString());
+
+          List<? extends AnnotationMirror> annotationMirrors = defaultMethod.getAnnotationMirrors();
+          String methodAnnotation = null;
+          if (annotationMirrors.size() == 1) {
+            methodAnnotation =
+                ClassName.get(annotationMirrors.get(0).getAnnotationType()).toString();
+          }
+
+          MethodSpec method = null;
+          if (methodAnnotation == null) {
+            method =
+                MethodSpec.methodBuilder("generate")
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(TypeName.get(getGenerateReturnType(annotatedInterface)))
+                    .addCode(generatedCode.build())
+                    .build();
+          } else {
+            method =
+                MethodSpec.methodBuilder(
+                        "generate"
+                            + methodAnnotation.substring(methodAnnotation.lastIndexOf('.') + 1))
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(TypeName.get(getGenerateReturnType(annotatedInterface)))
+                    .addCode(generatedCode.build())
+                    .build();
+          }
+
+          methods.add(method);
         }
-
-        AnnotationSpec generatedAnnotaion =
+        AnnotationSpec generatedAnnotation =
             AnnotationSpec.builder(Generated.class).addMember("value", "$S", "JTheories").build();
-
-        CodeBlock codeBlock =
-            CodeBlock.builder()
-                .addStatement(
-                    "return $T.super.generate($N)",
-                    ClassName.get(annotatedInterface.asType()),
-                    ParameterSpec.get(defaultMethod.getParameters().get(0)))
-                .build();
-
-        MethodSpec method = MethodSpec.overriding(defaultMethod).addCode(codeBlock).build();
 
         String annotatedElementClassName = TypeName.get(annotatedInterface.asType()).toString();
         String generatedClassName =
@@ -89,13 +139,13 @@ public class GeneratorProcessor extends AbstractProcessor {
         TypeSpec arbitraryObject =
             TypeSpec.classBuilder(generatorClassName)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .addSuperinterface(ClassName.get(annotatedInterface.asType()))
                 .addSuperinterface(
                     ParameterizedTypeName.get(
                         ClassName.get(Generator.class),
                         ClassName.get(getGenerateReturnType(annotatedInterface))))
-                .addSuperinterface(ClassName.get(annotatedInterface.asType()))
-                .addAnnotation(generatedAnnotaion)
-                .addMethod(method)
+                .addAnnotation(generatedAnnotation)
+                .addMethods(methods)
                 .build();
 
         JavaFile javaFile = JavaFile.builder(generatorPackage, arbitraryObject).build();

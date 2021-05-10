@@ -40,4 +40,20 @@ public class Generators {
     Generator<T> generator = getGenerator(generatedType);
     return generator.generate();
   }
+
+  public static <T> T gen(Class<T> generatedType, Class<?> annotation) {
+    Generator<T> generator = getGenerator(generatedType);
+    try {
+      return (T)
+          generator
+              .getClass()
+              .getDeclaredMethod("generate" + annotation.getSimpleName())
+              .invoke(generator);
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      throw new RuntimeException(
+          String.format(
+              "Could not call <%s> on generator %s",
+              "generate" + annotation.getSimpleName(), generatedType.getSimpleName()));
+    }
+  }
 }

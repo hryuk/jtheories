@@ -12,6 +12,6 @@ class ProductTest {
   @RepeatedTest(200)
   void doSomethingTest(Product product) {
     Assertions.assertEquals(product.getId(), UUID.fromString(product.getId().toString()));
-    Assertions.assertTrue(product.getPrice() < Long.MAX_VALUE);
+    Assertions.assertTrue(product.getPrice() > 0);
   }
 }
