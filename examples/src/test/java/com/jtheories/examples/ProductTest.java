@@ -13,5 +13,6 @@ class ProductTest {
   void doSomethingTest(Product product) {
     Assertions.assertEquals(product.getId(), UUID.fromString(product.getId().toString()));
     Assertions.assertTrue(product.getPrice() > 0);
+    Assertions.assertNotEquals(product.getPrice() % 10, 0);
   }
 }

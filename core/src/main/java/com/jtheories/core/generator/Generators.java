@@ -7,11 +7,9 @@ import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 public class Generators {
-
-  public static final SourceOfRandom SOURCE_OF_RANDOM = new SourceOfRandom();
-
   public static <T> Generator<T> getGenerator(Class<T> generatedType) {
     try (ScanResult scanResult = new ClassGraph().enableClassInfo().scan()) {
       ClassInfoList arbitraryGenerators =
@@ -36,24 +34,15 @@ public class Generators {
     }
   }
 
-  public static <T> T gen(Class<T> generatedType) {
-    Generator<T> generator = getGenerator(generatedType);
-    return generator.generate();
-  }
-
-  public static <T> T gen(Class<T> generatedType, Class<?> annotation) {
+  public static <T> T gen(Class<T> generatedType, Class<?>... annotations) {
     Generator<T> generator = getGenerator(generatedType);
     try {
-      return (T)
-          generator
-              .getClass()
-              .getDeclaredMethod("generate" + annotation.getSimpleName())
-              .invoke(generator);
+      return generator.generateConstrained(annotations);
     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(
           String.format(
               "Could not call <%s> on generator %s",
-              "generate" + annotation.getSimpleName(), generatedType.getSimpleName()));
+              "generate" + Arrays.toString(annotations), generatedType.getSimpleName()));
     }
   }
 }

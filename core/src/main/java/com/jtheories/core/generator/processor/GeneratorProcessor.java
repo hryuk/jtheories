@@ -6,8 +6,10 @@ import com.jtheories.core.generator.Generators;
 import com.squareup.javapoet.*;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
@@ -50,6 +52,16 @@ public class GeneratorProcessor extends AbstractProcessor {
           annotatedElements.stream().map(TypeElement.class::cast).collect(Collectors.toList());
 
       for (TypeElement annotatedInterface : annotatedInterfaces) {
+
+        String annotatedElementClassName = TypeName.get(annotatedInterface.asType()).toString();
+        String generatedClassName =
+            TypeName.get(getGenerateReturnType(annotatedInterface)).toString();
+        String generatedClassSimpleName =
+            generatedClassName.substring(generatedClassName.lastIndexOf('.') + 1);
+        String generatorPackage =
+            annotatedElementClassName.substring(0, annotatedElementClassName.lastIndexOf('.'));
+        String generatorClassName = String.format("Arbitrary%sGenerator", generatedClassSimpleName);
+
         List<ExecutableElement> defaultMethods =
             annotatedInterface.getEnclosedElements().stream()
                 .filter(e -> e.getKind() == ElementKind.METHOD)
@@ -65,11 +77,7 @@ public class GeneratorProcessor extends AbstractProcessor {
           List<CodeBlock> paramValues = new ArrayList<>();
           for (VariableElement parameter : parameters) {
             List<? extends AnnotationMirror> annotationMirrors = parameter.getAnnotationMirrors();
-            DeclaredType annotationSpec = null;
-            if (annotationMirrors.size() == 1) {
-              annotationSpec = annotationMirrors.get(0).getAnnotationType();
-            }
-            if (annotationSpec == null) {
+            if (annotationMirrors.isEmpty()) {
               generatedCode.addStatement(
                   "$T generated_$N = $T.gen($T.class)",
                   ClassName.get(parameter.asType()),
@@ -77,13 +85,18 @@ public class GeneratorProcessor extends AbstractProcessor {
                   ClassName.get(Generators.class),
                   ClassName.get(parameter.asType()));
             } else {
+              List<CodeBlock> annotatedTypes =
+                  annotationMirrors.stream()
+                      .map(a -> CodeBlock.of("$T.class", ClassName.get(a.getAnnotationType())))
+                      .collect(Collectors.toList());
+
               generatedCode.addStatement(
-                  "$T generated_$N = $T.gen($T.class, $T.class)",
+                  "$T generated_$N = $T.gen($T.class, $L)",
                   ClassName.get(parameter.asType()),
                   ParameterSpec.get(parameter),
                   ClassName.get(Generators.class),
                   ClassName.get(parameter.asType()),
-                  ClassName.get(annotationSpec));
+                  CodeBlock.join(annotatedTypes, ", "));
             }
 
             paramValues.add(CodeBlock.of("generated_$N", ParameterSpec.get(parameter)));
@@ -102,7 +115,7 @@ public class GeneratorProcessor extends AbstractProcessor {
                 ClassName.get(annotationMirrors.get(0).getAnnotationType()).toString();
           }
 
-          MethodSpec method = null;
+          MethodSpec method;
           if (methodAnnotation == null) {
             method =
                 MethodSpec.methodBuilder("generate")
@@ -115,26 +128,29 @@ public class GeneratorProcessor extends AbstractProcessor {
                 MethodSpec.methodBuilder(
                         "generate"
                             + methodAnnotation.substring(methodAnnotation.lastIndexOf('.') + 1))
+                    .addParameter(
+                        TypeName.get(getGenerateReturnType(annotatedInterface)),
+                        String.format("arbitrary%s", generatedClassSimpleName))
                     .addModifiers(Modifier.PUBLIC)
                     .returns(TypeName.get(getGenerateReturnType(annotatedInterface)))
-                    .addCode(generatedCode.build())
+                    .addCode(
+                        CodeBlock.builder()
+                            .addStatement(
+                                "return $T.super.$L($L)",
+                                ClassName.get(annotatedInterface.asType()),
+                                defaultMethod.getSimpleName(),
+                                String.format("arbitrary%s", generatedClassSimpleName))
+                            .build())
                     .build();
           }
 
           methods.add(method);
         }
+
+        methods.add(getGenerateConstrainedMethod(getGenerateReturnType(annotatedInterface)));
+
         AnnotationSpec generatedAnnotation =
             AnnotationSpec.builder(Generated.class).addMember("value", "$S", "JTheories").build();
-
-        String annotatedElementClassName = TypeName.get(annotatedInterface.asType()).toString();
-        String generatedClassName =
-            TypeName.get(getGenerateReturnType(annotatedInterface)).toString();
-        String generatorPackage =
-            annotatedElementClassName.substring(0, annotatedElementClassName.lastIndexOf('.'));
-        String generatorClassName =
-            String.format(
-                "Arbitrary%sGenerator",
-                generatedClassName.substring(generatedClassName.lastIndexOf('.') + 1));
 
         TypeSpec arbitraryObject =
             TypeSpec.classBuilder(generatorClassName)
@@ -168,6 +184,38 @@ public class GeneratorProcessor extends AbstractProcessor {
     }
 
     return true;
+  }
+
+  private MethodSpec getGenerateConstrainedMethod(TypeMirror generatedType) {
+
+    String generatedClassName =
+        generatedType.toString().substring(generatedType.toString().lastIndexOf('.') + 1);
+
+    return MethodSpec.methodBuilder("generateConstrained")
+        .addModifiers(Modifier.PUBLIC)
+        .addExceptions(
+            Stream.of(
+                    NoSuchMethodException.class,
+                    InvocationTargetException.class,
+                    IllegalAccessException.class)
+                .map(TypeName::get)
+                .collect(Collectors.toList()))
+        .addParameter(Class[].class, "annotations")
+        .varargs(true)
+        .addStatement("$T constrained$N = generate()", generatedType, generatedClassName)
+        .beginControlFlow("for(Class annotation:annotations)")
+        .addStatement(
+            "constrained$N = ($T)this.getClass()\n"
+                + ".getDeclaredMethod(\"generate\"+annotation.getSimpleName(),$T.class)\n"
+                + ".invoke(this,constrained$N) ",
+            generatedClassName,
+            generatedType,
+            generatedType,
+            generatedClassName)
+        .endControlFlow()
+        .addStatement("return constrained$N", generatedClassName)
+        .returns(TypeName.get(generatedType))
+        .build();
   }
 
   private TypeMirror getGenerateReturnType(TypeElement element) {
