@@ -1,35 +1,44 @@
 package com.jtheories.core.generator;
 
-import com.jtheories.core.random.SourceOfRandom;
+import com.jtheories.core.generator.exceptions.GenerationRuntimeException;
+import com.jtheories.core.generator.exceptions.GeneratorInstantiationException;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
-import io.github.classgraph.ScanResult;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 
 public class Generators {
+
+  /**
+   * Expected name of the generator method
+   */
+  public static final String GENERATE = "generate";
+
+  private Generators() {
+    throw new AssertionError("This class cannot be instanced");
+  }
+
   public static <T> Generator<T> getGenerator(Class<T> generatedType) {
-    try (ScanResult scanResult = new ClassGraph().enableClassInfo().scan()) {
+    try (var scanResult = new ClassGraph().enableClassInfo().scan()) {
       ClassInfoList arbitraryGenerators =
           scanResult.getClassesImplementing("com.jtheories.core.generator.Generator");
 
       for (ClassInfo arbitraryGenerator : arbitraryGenerators) {
-        Method generateMethod = arbitraryGenerator.loadClass().getDeclaredMethod("generate");
+        var generateMethod = arbitraryGenerator.loadClass().getDeclaredMethod(Generators.GENERATE);
         if (generateMethod.getReturnType().equals(generatedType)) {
           //noinspection unchecked
           return (Generator<T>) arbitraryGenerator.loadClass().getConstructor().newInstance();
         }
       }
 
-      throw new RuntimeException(
+      throw new GeneratorInstantiationException(
           String.format("Could not find generator for %s", generatedType.getName()));
     } catch (NoSuchMethodException
         | IllegalAccessException
         | InstantiationException
         | InvocationTargetException e) {
-      throw new RuntimeException(
+      throw new GeneratorInstantiationException(
           String.format("Could not instantiate generator <%s>", e.getClass().getName()));
     }
   }
@@ -39,10 +48,10 @@ public class Generators {
     try {
       return generator.generateConstrained(annotations);
     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-      throw new RuntimeException(
+      throw new GenerationRuntimeException(
           String.format(
-              "Could not call <%s> on generator %s",
-              "generate" + Arrays.toString(annotations), generatedType.getSimpleName()));
+              "Could not call <%s>() on generator %s",
+              Generators.GENERATE + Arrays.toString(annotations), generatedType.getSimpleName()), e);
     }
   }
 }

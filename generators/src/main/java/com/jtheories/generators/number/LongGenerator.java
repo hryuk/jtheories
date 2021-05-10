@@ -11,8 +11,8 @@ public interface LongGenerator {
   }
 
   @Positive
-  default Long generatePositive(Long arbitraryLong) {
-    return Math.abs(arbitraryLong);
+  default Long generatePositive(SourceOfRandom random) {
+    return (long) (random.getRandom().nextFloat() * (Long.MAX_VALUE - 1));
   }
 
   @NotMultipleOf10
