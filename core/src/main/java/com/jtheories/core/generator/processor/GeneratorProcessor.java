@@ -55,11 +55,11 @@ public class GeneratorProcessor extends AbstractProcessor {
    * implementation with a generated value for each of its parameters
    *
    * @param generatorInterface the interface annotated with {@link Generator}
-   * @param defaultMethod      the generator method implemented by default on the interface
+   * @param defaultMethod the generator method implemented by default on the interface
    * @return a {@link CodeBlock} containing the code for the generated implementation
    */
-  private static CodeBlock generateCodeBlock(TypeElement generatorInterface,
-      ExecutableElement defaultMethod) {
+  private static CodeBlock generateCodeBlock(
+      TypeElement generatorInterface, ExecutableElement defaultMethod) {
     var codeBlockBuilder = CodeBlock.builder();
 
     // Add assignment for each parameter
@@ -68,9 +68,10 @@ public class GeneratorProcessor extends AbstractProcessor {
         .forEach(codeBlockBuilder::addStatement);
 
     // Create code block
-    var codeBlock = defaultMethod.getParameters().stream()
-        .map(parameter -> CodeBlock.of("generated_$N", ParameterSpec.get(parameter)))
-        .collect(CodeBlock.joining(", "));
+    var codeBlock =
+        defaultMethod.getParameters().stream()
+            .map(parameter -> CodeBlock.of("generated_$N", ParameterSpec.get(parameter)))
+            .collect(CodeBlock.joining(", "));
 
     // Add return of parent's default method result
     codeBlockBuilder.addStatement(
@@ -85,11 +86,14 @@ public class GeneratorProcessor extends AbstractProcessor {
   /**
    * Generates a random value assignment {@link CodeBlock} for a parameter. The generated code has
    * looks like this:
-   * <p>{@code Parameter generated_parameter = Generators.gen(Parameter.class)}</p><br />
+   *
+   * <p>{@code Parameter generated_parameter = Generators.gen(Parameter.class)}<br>
+   *
    * <p>If the parameter is annotated with a constraint, it will be taken into account, generating
-   * code like this instead:</p>
+   * code like this instead:
+   *
    * <p>{@code Parameter generated_parameter = Generators.gen(Parameter.class,
-   * Constraint.class)}</p>
+   * ...[Constraint.class])}
    *
    * @param parameter a generator method's parameter represented by a {@link VariableElement}
    * @return a {@link CodeBlock} with the assignment code
@@ -101,19 +105,26 @@ public class GeneratorProcessor extends AbstractProcessor {
     var parameterSpec = ParameterSpec.get(parameter);
     var parentInterface = ClassName.get(Generators.class);
 
-    if (annotationMirrors.size() == 1) {
-      return CodeBlock.of("$T generated_$N = $T.gen($T.class, $T.class)",
-          parameterType,
-          parameterSpec,
-          parentInterface,
-          parameterType,
-          TypeName.get(annotationMirrors.get(0).getAnnotationType()));
-    } else {
-      return CodeBlock.of("$T generated_$N = $T.gen($T.class)",
+    if (annotationMirrors.isEmpty()) {
+      return CodeBlock.of(
+          "$T generated_$N = $T.gen($T.class)",
           parameterType,
           parameterSpec,
           parentInterface,
           parameterType);
+    } else {
+      List<CodeBlock> annotatedTypes =
+          annotationMirrors.stream()
+              .map(a -> CodeBlock.of("$T.class", ClassName.get(a.getAnnotationType())))
+              .collect(Collectors.toList());
+
+      return CodeBlock.of(
+          "$T generated_$N = $T.gen($T.class, $L)",
+          parameterType,
+          parameterSpec,
+          parentInterface,
+          parameterType,
+          CodeBlock.join(annotatedTypes, ", "));
     }
   }
 
@@ -125,9 +136,9 @@ public class GeneratorProcessor extends AbstractProcessor {
         .addModifiers(Modifier.PUBLIC)
         .addExceptions(
             Stream.of(
-                NoSuchMethodException.class,
-                InvocationTargetException.class,
-                IllegalAccessException.class)
+                    NoSuchMethodException.class,
+                    InvocationTargetException.class,
+                    IllegalAccessException.class)
                 .map(TypeName::get)
                 .collect(Collectors.toList()))
         .addParameter(Class[].class, "annotations")
@@ -152,14 +163,15 @@ public class GeneratorProcessor extends AbstractProcessor {
    * Generates an implementation for a generator method, defined in a generator interface
    *
    * @param generatorInterface the generator interface
-   * @param defaultMethod      the method whose implementation needs to be generated
+   * @param defaultMethod the method whose implementation needs to be generated
    * @return a {@link MethodSpec} containing the method's generated implementation
    */
   private MethodSpec generateMethodImplementation(
-      TypeElement generatorInterface,
-      ExecutableElement defaultMethod) {
+      TypeElement generatorInterface, ExecutableElement defaultMethod) {
 
-    var generatedCode = generateCodeBlock(generatorInterface, defaultMethod);
+    String generatedClassName = getGeneratorReturnType(generatorInterface).toString();
+    String generatedClassSimpleName =
+        generatedClassName.substring(generatedClassName.lastIndexOf('.') + 1);
 
     var annotationMirrors = defaultMethod.getAnnotationMirrors();
     String methodAnnotation = null;
@@ -167,15 +179,35 @@ public class GeneratorProcessor extends AbstractProcessor {
       methodAnnotation = TypeName.get(annotationMirrors.get(0).getAnnotationType()).toString();
     }
 
-    var name = methodAnnotation == null
-        ? "generate"
-        : "generate" + methodAnnotation.substring(methodAnnotation.lastIndexOf('.') + 1);
+    var generatedCode =
+        methodAnnotation == null
+            ? generateCodeBlock(generatorInterface, defaultMethod)
+            : CodeBlock.builder()
+                .addStatement(
+                    "return $T.super.$L($L)",
+                    ClassName.get(generatorInterface.asType()),
+                    defaultMethod.getSimpleName(),
+                    String.format("arbitrary%s", generatedClassSimpleName))
+                .build();
 
-    return MethodSpec.methodBuilder(name)
-        .addModifiers(Modifier.PUBLIC)
-        .returns(getGeneratorReturnType(generatorInterface))
-        .addCode(generatedCode)
-        .build();
+    var name =
+        methodAnnotation == null
+            ? "generate"
+            : "generate" + methodAnnotation.substring(methodAnnotation.lastIndexOf('.') + 1);
+
+    MethodSpec.Builder methodBuilder =
+        MethodSpec.methodBuilder(name)
+            .addModifiers(Modifier.PUBLIC)
+            .returns(getGeneratorReturnType(generatorInterface))
+            .addCode(generatedCode);
+
+    if (methodAnnotation != null) {
+      methodBuilder.addParameter(
+          getGeneratorReturnType(generatorInterface),
+          String.format("arbitrary%s", generatedClassSimpleName));
+    }
+
+    return methodBuilder.build();
   }
 
   /**
@@ -211,8 +243,8 @@ public class GeneratorProcessor extends AbstractProcessor {
   }
 
   @Override
-  public boolean process(Set<? extends TypeElement> supportedAnnotations,
-      RoundEnvironment roundEnv) {
+  public boolean process(
+      Set<? extends TypeElement> supportedAnnotations, RoundEnvironment roundEnv) {
     try {
       supportedAnnotations.stream()
           .map(roundEnv::getElementsAnnotatedWith)
@@ -236,8 +268,7 @@ public class GeneratorProcessor extends AbstractProcessor {
    */
   private boolean checkAndReportIllegalUsages(Element element) {
     if (element.getKind() != ElementKind.INTERFACE) {
-      fatal("Illegal use of @Generator on non-interface element %s",
-          element.getSimpleName());
+      fatal("Illegal use of @Generator on non-interface element %s", element.getSimpleName());
       return false;
     }
 
@@ -260,15 +291,17 @@ public class GeneratorProcessor extends AbstractProcessor {
             .addMember("value", "$S", GeneratorProcessor.class.getName())
             .build();
 
-    List<MethodSpec> methods = generatorInterface.getEnclosedElements().stream()
-        .filter(e -> e.getKind() == ElementKind.METHOD)
-        .map(ExecutableElement.class::cast)
-        .map(executableElement -> generateMethodImplementation(generatorInterface,
-            executableElement))
-        .collect(Collectors.toList());
+    List<MethodSpec> methods =
+        generatorInterface.getEnclosedElements().stream()
+            .filter(e -> e.getKind() == ElementKind.METHOD)
+            .map(ExecutableElement.class::cast)
+            .map(
+                executableElement ->
+                    generateMethodImplementation(generatorInterface, executableElement))
+            .collect(Collectors.toList());
 
-    methods
-        .add(generateConstrainedMethodImplementation(getGeneratorReturnType(generatorInterface)));
+    methods.add(
+        generateConstrainedMethodImplementation(getGeneratorReturnType(generatorInterface)));
 
     TypeSpec arbitraryObject =
         TypeSpec.classBuilder(generatorClassName)
@@ -276,8 +309,7 @@ public class GeneratorProcessor extends AbstractProcessor {
             .addSuperinterface(TypeName.get(generatorInterface.asType()))
             .addSuperinterface(
                 ParameterizedTypeName.get(
-                    ClassName.get(Generator.class),
-                    getGeneratorReturnType(generatorInterface)))
+                    ClassName.get(Generator.class), getGeneratorReturnType(generatorInterface)))
             .addAnnotation(generatedAnnotation)
             .addMethods(methods)
             .build();
@@ -291,7 +323,7 @@ public class GeneratorProcessor extends AbstractProcessor {
    * Output a source file
    *
    * @param sourceFileName the source file's name
-   * @param javaFile       the file content
+   * @param javaFile the file content
    * @throws GeneratorProcessorException if the file cannot be created
    */
   private void writeFile(String sourceFileName, JavaFile javaFile) {
