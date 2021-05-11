@@ -4,10 +4,10 @@ import java.util.Random;
 
 public class SourceOfRandom {
 
-  private final Random random;
+  private static final Random random = new Random();
 
-  public SourceOfRandom() {
-    this.random = new Random();
+  static {
+    // We need to seed SourceOfRandom only once, or else test results cannot be reproduced
     random.setSeed(random.nextLong());
   }
 

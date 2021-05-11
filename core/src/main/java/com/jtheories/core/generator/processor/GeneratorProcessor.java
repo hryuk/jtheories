@@ -15,10 +15,12 @@ import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Generated;
 import javax.annotation.processing.Messager;
@@ -36,6 +38,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
@@ -45,36 +48,7 @@ import javax.tools.JavaFileObject;
 public class GeneratorProcessor extends AbstractProcessor {
 
   private Messager messager = null;
-
-  /**
-   * Generates an implementation for a generator method, defined in a generator interface
-   *
-   * @param generatorInterface the generator interface
-   * @param defaultMethod      the method whose implementation needs to be generated
-   * @return a {@link MethodSpec} containing the method's generated implementation
-   */
-  private static MethodSpec generateMethodImplementation(
-      TypeElement generatorInterface,
-      ExecutableElement defaultMethod) {
-
-    var generatedCode = generateCodeBlock(generatorInterface, defaultMethod);
-
-    var annotationMirrors = defaultMethod.getAnnotationMirrors();
-    String methodAnnotation = null;
-    if (annotationMirrors.size() == 1) {
-      methodAnnotation = TypeName.get(annotationMirrors.get(0).getAnnotationType()).toString();
-    }
-
-    var name = methodAnnotation == null
-        ? "generate"
-        : "generate" + methodAnnotation.substring(methodAnnotation.lastIndexOf('.') + 1);
-
-    return MethodSpec.methodBuilder(name)
-        .addModifiers(Modifier.PUBLIC)
-        .returns(TypeName.get(getGenerateReturnType(generatorInterface)))
-        .addCode(generatedCode)
-        .build();
-  }
+  private Types typeUtils;
 
   /**
    * Generates a code block implementing a generator method that calls its parent's default
@@ -143,13 +117,88 @@ public class GeneratorProcessor extends AbstractProcessor {
     }
   }
 
-  // TODO: Document this
-  private static TypeMirror getGenerateReturnType(TypeElement element) {
+  private MethodSpec generateConstrainedMethodImplementation(ClassName generatedType) {
+
+    var generatedClassName = generatedType.simpleName();
+
+    return MethodSpec.methodBuilder("generateConstrained")
+        .addModifiers(Modifier.PUBLIC)
+        .addExceptions(
+            Stream.of(
+                NoSuchMethodException.class,
+                InvocationTargetException.class,
+                IllegalAccessException.class)
+                .map(TypeName::get)
+                .collect(Collectors.toList()))
+        .addParameter(Class[].class, "annotations")
+        .varargs(true)
+        .addStatement("$T constrained$N = generate()", generatedType, generatedClassName)
+        .beginControlFlow("for(Class annotation:annotations)")
+        .addStatement(
+            "constrained$N = ($T)this.getClass()\n"
+                + ".getDeclaredMethod(\"generate\"+annotation.getSimpleName(),$T.class)\n"
+                + ".invoke(this,constrained$N) ",
+            generatedClassName,
+            generatedType,
+            generatedType,
+            generatedClassName)
+        .endControlFlow()
+        .addStatement("return constrained$N", generatedClassName)
+        .returns(generatedType)
+        .build();
+  }
+
+  /**
+   * Generates an implementation for a generator method, defined in a generator interface
+   *
+   * @param generatorInterface the generator interface
+   * @param defaultMethod      the method whose implementation needs to be generated
+   * @return a {@link MethodSpec} containing the method's generated implementation
+   */
+  private MethodSpec generateMethodImplementation(
+      TypeElement generatorInterface,
+      ExecutableElement defaultMethod) {
+
+    var generatedCode = generateCodeBlock(generatorInterface, defaultMethod);
+
+    var annotationMirrors = defaultMethod.getAnnotationMirrors();
+    String methodAnnotation = null;
+    if (annotationMirrors.size() == 1) {
+      methodAnnotation = TypeName.get(annotationMirrors.get(0).getAnnotationType()).toString();
+    }
+
+    var name = methodAnnotation == null
+        ? "generate"
+        : "generate" + methodAnnotation.substring(methodAnnotation.lastIndexOf('.') + 1);
+
+    return MethodSpec.methodBuilder(name)
+        .addModifiers(Modifier.PUBLIC)
+        .returns(getGeneratorReturnType(generatorInterface))
+        .addCode(generatedCode)
+        .build();
+  }
+
+  /**
+   * Given a generator class represented by a {@link TypeElement}, obtain the return type of the
+   * generator
+   *
+   * @param element the class of the generator
+   * @return the return type of the generator as a {@link TypeMirror}
+   */
+  private ClassName getGeneratorReturnType(TypeElement element) {
+    // TODO: This only works if the generator has only one return type among its methods
+    //  (or only has one method), it will return any of its return types otherwise, we need to
+    //  make sure that generators only have one return type or else make necessary arrangements to
+    //  support more of them
     return element.getEnclosedElements().stream()
         .filter(e -> e.getKind() == ElementKind.METHOD)
         .map(Element::asType)
         .map(ExecutableType.class::cast)
         .map(ExecutableType::getReturnType)
+        .map(this.typeUtils::asElement)
+        .filter(TypeElement.class::isInstance)
+        .map(TypeElement.class::cast)
+        .map(ClassName::get)
         .findFirst()
         .orElseThrow();
   }
@@ -158,6 +207,7 @@ public class GeneratorProcessor extends AbstractProcessor {
   public synchronized void init(ProcessingEnvironment processingEnv) {
     super.init(processingEnv);
     this.messager = processingEnv.getMessager();
+    this.typeUtils = processingEnv.getTypeUtils();
   }
 
   @Override
@@ -200,14 +250,10 @@ public class GeneratorProcessor extends AbstractProcessor {
    * @param generatorInterface the interface to implement
    */
   private void generateImplementation(TypeElement generatorInterface) {
-    var annotatedElementClassName = TypeName.get(generatorInterface.asType()).toString();
-    var generatedClassName = TypeName.get(getGenerateReturnType(generatorInterface)).toString();
-    var generatorPackage = annotatedElementClassName
-        .substring(0, annotatedElementClassName.lastIndexOf('.'));
-    var generatorClassName =
-        String.format(
-            "Arbitrary%sGenerator",
-            generatedClassName.substring(generatedClassName.lastIndexOf('.') + 1));
+    var annotatedElementClassName = ClassName.get(generatorInterface);
+    var generatedClassName = getGeneratorReturnType(generatorInterface);
+    var generatorPackage = annotatedElementClassName.packageName();
+    var generatorClassName = String.format("Arbitrary%sGenerator", generatedClassName.simpleName());
 
     AnnotationSpec generatedAnnotation =
         AnnotationSpec.builder(Generated.class)
@@ -221,6 +267,9 @@ public class GeneratorProcessor extends AbstractProcessor {
             executableElement))
         .collect(Collectors.toList());
 
+    methods
+        .add(generateConstrainedMethodImplementation(getGeneratorReturnType(generatorInterface)));
+
     TypeSpec arbitraryObject =
         TypeSpec.classBuilder(generatorClassName)
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
@@ -228,7 +277,7 @@ public class GeneratorProcessor extends AbstractProcessor {
             .addSuperinterface(
                 ParameterizedTypeName.get(
                     ClassName.get(Generator.class),
-                    TypeName.get(getGenerateReturnType(generatorInterface))))
+                    getGeneratorReturnType(generatorInterface)))
             .addAnnotation(generatedAnnotation)
             .addMethods(methods)
             .build();
