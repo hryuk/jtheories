@@ -12,6 +12,9 @@ public interface LongGenerator {
 
   @Positive
   default Long generatePositive(Long arbitraryLong) {
+    // TODO: This code is buggy, use the commented out code instead or Long.MIN_VALUE and
+    //  Math.abs() will ruin you
+    //  return (long) (random.getRandom().nextFloat() * (Long.MAX_VALUE - 1));
     return Math.abs(arbitraryLong);
   }
 
