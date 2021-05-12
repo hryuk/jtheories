@@ -11,27 +11,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ArbitraryConstrainedMethod {
+public class ArbitraryGenerateConstrainedMethod {
 
   private final MethodSpec constrainedMethod;
   private final ClassName returnType;
 
-  /**
-   * Generates a random value assignment {@link CodeBlock} for a parameter. The generated code has
-   * looks like this:
-   *
-   * <p>{@code Parameter generated_parameter = Generators.gen(Parameter.class)}<br>
-   *
-   * <p>If the parameter is annotated with a constraint, it will be taken into account, generating
-   * code like this instead:
-   *
-   * <p>{@code Parameter generated_parameter = Generators.gen(Parameter.class,
-   * ...[Constraint.class])}
-   *
-   * @param parameter a generator method's parameter represented by a {@link VariableElement}
-   * @return a {@link CodeBlock} with the assignment code
-   */
-  public ArbitraryConstrainedMethod(ClassName returnType) {
+  public ArbitraryGenerateConstrainedMethod(ClassName returnType) {
     this.returnType = returnType;
     var generatedClassName = returnType.simpleName();
 
@@ -61,6 +46,10 @@ public class ArbitraryConstrainedMethod {
             .addStatement("return constrained$N", generatedClassName)
             .returns(returnType)
             .build();
+  }
+
+  public ClassName getReturnType() {
+    return returnType;
   }
 
   public MethodSpec getConstrainedMethod() {

@@ -8,6 +8,7 @@ import javax.lang.model.element.*;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,18 +40,42 @@ public class ArbitraryGeneratorImplementation {
             .addMember("value", "$S", GeneratorProcessor.class.getName())
             .build();
 
-    List<MethodSpec> methods =
+    List<MethodSpec> generatorMethods = new ArrayList<>();
+    MethodSpec generate =
         generatorInterface.getEnclosedElements().stream()
             .filter(e -> e.getKind() == ElementKind.METHOD)
+            .filter(e -> e.getAnnotationMirrors().isEmpty())
             .map(ExecutableElement.class::cast)
             .map(
                 executableElement ->
                     new ArbitraryGenerateMethod(
                         generatorInterface, generatorReturnType, executableElement))
             .map(ArbitraryGenerateMethod::getGeneratedMethod)
+            .findAny()
+            .orElseThrow();
+
+    generatorMethods.add(generate);
+
+    List<MethodSpec> constrictorMethods =
+        generatorInterface.getEnclosedElements().stream()
+            .filter(e -> e.getKind() == ElementKind.METHOD)
+            .filter(e -> e.getAnnotationMirrors().size() == 1)
+            .map(ExecutableElement.class::cast)
+            .map(
+                executableElement ->
+                    new ArbitraryConstrictorMethod(
+                        generatorInterface,
+                        TypeName.get(
+                            executableElement.getAnnotationMirrors().get(0).getAnnotationType()),
+                        generatorReturnType,
+                        executableElement))
+            .map(ArbitraryConstrictorMethod::getGeneratedMethod)
             .collect(Collectors.toList());
 
-    methods.add(new ArbitraryConstrainedMethod(generatorReturnType).getConstrainedMethod());
+    generatorMethods.addAll(constrictorMethods);
+
+    generatorMethods.add(
+        new ArbitraryGenerateConstrainedMethod(generatorReturnType).getConstrainedMethod());
 
     TypeSpec arbitraryGenerator =
         TypeSpec.classBuilder(generatorClassName)
@@ -59,7 +84,7 @@ public class ArbitraryGeneratorImplementation {
             .addSuperinterface(
                 ParameterizedTypeName.get(ClassName.get(Generator.class), generatorReturnType))
             .addAnnotation(generatedAnnotation)
-            .addMethods(methods)
+            .addMethods(generatorMethods)
             .build();
 
     this.javaFile = JavaFile.builder(generatorPackage, arbitraryGenerator).build();

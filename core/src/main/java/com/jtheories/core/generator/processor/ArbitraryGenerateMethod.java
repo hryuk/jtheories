@@ -25,39 +25,14 @@ public class ArbitraryGenerateMethod {
 
     var generatedClassSimpleName =
         returnType.toString().substring(returnType.toString().lastIndexOf('.') + 1);
-    var annotationMirrors = defaultMethod.getAnnotationMirrors();
 
-    String methodAnnotation = null;
-    if (annotationMirrors.size() == 1) {
-      methodAnnotation = TypeName.get(annotationMirrors.get(0).getAnnotationType()).toString();
-    }
-
-    var generatedCode =
-        methodAnnotation == null
-            ? generateCodeBlock(generatorInterface, defaultMethod)
-            : CodeBlock.builder()
-                .addStatement(
-                    "return $T.super.$L($L)",
-                    TypeName.get(generatorInterface.asType()),
-                    defaultMethod.getSimpleName(),
-                    String.format("arbitrary%s", generatedClassSimpleName))
-                .build();
-
-    var name =
-        methodAnnotation == null
-            ? "generate"
-            : "generate" + methodAnnotation.substring(methodAnnotation.lastIndexOf('.') + 1);
+    var generatedCode = generateCodeBlock(generatorInterface, defaultMethod);
 
     var methodBuilder =
-        MethodSpec.methodBuilder(name)
+        MethodSpec.methodBuilder("generate")
             .addModifiers(Modifier.PUBLIC)
             .returns(returnType)
             .addCode(generatedCode);
-
-    if (methodAnnotation != null) {
-      methodBuilder.addParameter(
-          returnType, String.format("arbitrary%s", generatedClassSimpleName));
-    }
 
     this.generatedMethod = methodBuilder.build();
   }
@@ -95,6 +70,21 @@ public class ArbitraryGenerateMethod {
     return codeBlockBuilder.build();
   }
 
+  /**
+   * Generates a random value assignment {@link CodeBlock} for a parameter. The generated code has
+   * looks like this:
+   *
+   * <p>{@code Parameter generated_parameter = Generators.gen(Parameter.class)}<br>
+   *
+   * <p>If the parameter is annotated with a constraint, it will be taken into account, generating
+   * code like this instead:
+   *
+   * <p>{@code Parameter generated_parameter = Generators.gen(Parameter.class,
+   * ...[Constraint.class])}
+   *
+   * @param parameter a generator method's parameter represented by a {@link VariableElement}
+   * @return a {@link CodeBlock} with the assignment code
+   */
   private static CodeBlock generateAssignment(VariableElement parameter) {
     var annotationMirrors = parameter.getAnnotationMirrors();
 
