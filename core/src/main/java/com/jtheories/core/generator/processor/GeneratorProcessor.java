@@ -3,7 +3,6 @@ package com.jtheories.core.generator.processor;
 import com.google.auto.service.AutoService;
 import com.jtheories.core.generator.exceptions.GeneratorProcessorException;
 import com.squareup.javapoet.JavaFile;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
@@ -47,12 +46,9 @@ public class GeneratorProcessor extends AbstractProcessor {
           .flatMap(Collection::stream)
           .filter(this::checkAndReportIllegalUsages)
           .map(TypeElement.class::cast)
-          .map(
-              (annotatedElement) ->
-                  new ArbitraryGeneratorImplementation(annotatedElement, typeUtils))
-          .forEach(
-              arbitraryGenerator ->
-                  writeFile(arbitraryGenerator.getFileName(), arbitraryGenerator.getJavaFile()));
+          .map(typeElement -> new GeneratorInformation(typeUtils, typeElement))
+          .map(ArbitraryGeneratorImplementation::new)
+          .forEach(this::writeFile);
 
     } catch (GeneratorProcessorException e) {
       fatal(e.getMessage());
@@ -80,8 +76,20 @@ public class GeneratorProcessor extends AbstractProcessor {
   /**
    * Output a source file
    *
+   * @param arbitraryGeneratorImplementation the generator implementation
+   * @throws GeneratorProcessorException if the file cannot be created
+   */
+  private void writeFile(ArbitraryGeneratorImplementation arbitraryGeneratorImplementation) {
+    this.writeFile(
+        arbitraryGeneratorImplementation.getFileName(),
+        arbitraryGeneratorImplementation.getJavaFile());
+  }
+
+  /**
+   * Output a source file
+   *
    * @param sourceFileName the source file's name
-   * @param javaFile the file content
+   * @param javaFile       the file content
    * @throws GeneratorProcessorException if the file cannot be created
    */
   private void writeFile(String sourceFileName, JavaFile javaFile) {
