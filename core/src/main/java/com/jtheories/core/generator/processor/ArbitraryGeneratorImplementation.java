@@ -30,7 +30,16 @@ public class ArbitraryGeneratorImplementation {
    */
   public ArbitraryGeneratorImplementation(GeneratorInformation information) {
     this.information = information;
+    this.fileName = String.format("%s.%s",
+        this.information.getGeneratorPackage(),
+        this.information.getImplementerName());
+    this.javaFile = JavaFile.builder(
+        this.information.getGeneratorPackage(),
+        createArbitraryGenerator())
+        .build();
+  }
 
+  private TypeSpec createArbitraryGenerator() {
     AnnotationSpec generatedAnnotation =
         AnnotationSpec.builder(Generated.class)
             .addMember("value", "$S", GeneratorProcessor.class.getName())
@@ -43,12 +52,7 @@ public class ArbitraryGeneratorImplementation {
         .filter(e -> e.getKind() == ElementKind.METHOD)
         .filter(e -> e.getAnnotationMirrors().isEmpty())
         .map(ExecutableElement.class::cast)
-        .map(
-            executableElement ->
-                new ArbitraryGenerateMethod(
-                    this.information.getGeneratorType(),
-                    this.information.getReturnClassName(),
-                    executableElement))
+        .map(this::createArbitraryGenerateMethod)
         .map(ArbitraryGenerateMethod::getGeneratedMethod)
         .findAny()
         .orElseThrow();
@@ -71,23 +75,20 @@ public class ArbitraryGeneratorImplementation {
         new ArbitraryGenerateConstrainedMethod(this.information.getReturnClassName())
             .getConstrainedMethod());
 
-    TypeSpec arbitraryGenerator =
-        TypeSpec.classBuilder(this.information.getImplementerName())
-            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-            .addSuperinterface(this.information.getClassName())
-            .addSuperinterface(
-                ParameterizedTypeName.get(ClassName.get(Generator.class),
-                    this.information.getReturnClassName()))
-            .addAnnotation(generatedAnnotation)
-            .addMethods(generatorMethods)
-            .build();
-
-    this.javaFile = JavaFile.builder(
-        this.information.getGeneratorPackage(),
-        arbitraryGenerator)
+    return TypeSpec.classBuilder(this.information.getImplementerName())
+        .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+        .addSuperinterface(this.information.getClassName())
+        .addSuperinterface(
+            ParameterizedTypeName.get(ClassName.get(Generator.class),
+                this.information.getReturnClassName()))
+        .addAnnotation(generatedAnnotation)
+        .addMethods(generatorMethods)
         .build();
-    this.fileName =
-        this.information.getGeneratorPackage() + "." + this.information.getImplementerName();
+  }
+
+  private ArbitraryGenerateMethod createArbitraryGenerateMethod(
+      ExecutableElement executableElement) {
+    return new ArbitraryGenerateMethod(this.information, executableElement);
   }
 
   private ArbitraryConstrictorMethod createArbitraryConstrictorMethod(

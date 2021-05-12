@@ -2,11 +2,18 @@ package com.jtheories.core.generator.processor;
 
 import com.jtheories.core.generator.Generator;
 import com.jtheories.core.generator.Generators;
-import com.squareup.javapoet.*;
-
-import javax.lang.model.element.*;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.TypeName;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 
 public class ArbitraryGenerateMethod {
 
@@ -15,19 +22,16 @@ public class ArbitraryGenerateMethod {
   /**
    * Generates an implementation for a generator method, defined in a generator interface
    *
-   * @param generatorInterface the generator interface element
-   * @param returnType the return type of the method
+   * @param information   the  declared generator interface information enclosed in a {@link
+   *                      GeneratorInformation} object
    * @param defaultMethod the method whose implementation needs to be generated
-   * @return a {@link MethodSpec} containing the method's generated implementation
    */
-  public ArbitraryGenerateMethod(
-      TypeElement generatorInterface, ClassName returnType, ExecutableElement defaultMethod) {
+  public ArbitraryGenerateMethod(GeneratorInformation information,
+      ExecutableElement defaultMethod) {
 
-    var generatedClassSimpleName =
-        returnType.toString().substring(returnType.toString().lastIndexOf('.') + 1);
-
+    var generatorInterface = information.getGeneratorType();
+    var returnType = information.getReturnClassName();
     var generatedCode = generateCodeBlock(generatorInterface, defaultMethod);
-
     var methodBuilder =
         MethodSpec.methodBuilder("generate")
             .addModifiers(Modifier.PUBLIC)
@@ -42,7 +46,7 @@ public class ArbitraryGenerateMethod {
    * implementation with a generated value for each of its parameters
    *
    * @param generatorInterface the interface annotated with {@link Generator}
-   * @param defaultMethod the generator method implemented by default on the interface
+   * @param defaultMethod      the generator method implemented by default on the interface
    * @return a {@link CodeBlock} containing the code for the generated implementation
    */
   private static CodeBlock generateCodeBlock(
