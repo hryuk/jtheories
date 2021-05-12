@@ -14,4 +14,9 @@ public interface ProductGenerator {
   default Product generate(UUID id, String name, @Positive @NotMultipleOf10 Long price) {
     return new Product(id, name, price);
   }
+
+  @Free
+  default Product generateFree(Product product) {
+    return new Product(product.getId(), product.getName(), 0L);
+  }
 }

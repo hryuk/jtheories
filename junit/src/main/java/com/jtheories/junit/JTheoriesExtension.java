@@ -19,15 +19,14 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 
 public class JTheoriesExtension implements ParameterResolver {
 
-
   private final List<Class<?>> availableGenerators = new ArrayList<>();
   private final List<Object> generators = new ArrayList<>();
 
   public JTheoriesExtension() {
-    try (var scanResult = new ClassGraph().enableAnnotationInfo().scan()) {
-      ClassInfoList annotatedClasses =
+    try (var scanResult = new ClassGraph().enableAllInfo().scan()) {
+      ClassInfoList generatorClasses =
           scanResult.getClassesImplementing("com.jtheories.core.generator.Generator");
-      for (ClassInfo annotatedClass : annotatedClasses) {
+      for (ClassInfo annotatedClass : generatorClasses) {
         generators.add(annotatedClass.loadClass().getConstructor().newInstance());
         var generateMethod = annotatedClass.loadClass().getDeclaredMethod(Generators.GENERATE);
         availableGenerators.add(generateMethod.getReturnType());
@@ -73,9 +72,10 @@ public class JTheoriesExtension implements ParameterResolver {
     try {
       generateMethod = generator.getClass().getDeclaredMethod(Generators.GENERATE);
     } catch (NoSuchMethodException e) {
-      throw new MissingGeneratorMethodException(String
-          .format("Could not find generate() method on generator %s",
-              generator.getClass().getName()), e);
+      throw new MissingGeneratorMethodException(
+          String.format(
+              "Could not find generate() method on generator %s", generator.getClass().getName()),
+          e);
     }
 
     try {
@@ -83,13 +83,13 @@ public class JTheoriesExtension implements ParameterResolver {
     } catch (IllegalAccessException e) {
       throw new IllegalGeneratorMethodAccessException(
           String.format(
-              "Could not access generate() method on generator %s",
-              generator.getClass().getName()), e);
+              "Could not access generate() method on generator %s", generator.getClass().getName()),
+          e);
     } catch (InvocationTargetException e) {
       throw new GenerationRuntimeException(
           String.format(
-              "Method generate() on class %s threw an exception",
-              generator.getClass().getName()), e);
+              "Method generate() on class %s threw an exception", generator.getClass().getName()),
+          e);
     }
   }
 }
