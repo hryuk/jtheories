@@ -1,46 +1,42 @@
 package com.jtheories.core.generator.processor;
 
-import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
-
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
 
 public class ArbitraryConstrictorMethod {
 
-  private MethodSpec generatedMethod;
+  private final MethodSpec generatedMethod;
 
   public ArbitraryConstrictorMethod(
-      TypeElement generatorInterface,
-      TypeName annotation,
-      ClassName returnType,
+      GeneratorInformation information,
+      Element annotation,
       ExecutableElement defaultMethod) {
 
-    var generatedClassSimpleName =
-        returnType.toString().substring(returnType.toString().lastIndexOf('.') + 1);
+    var generatedClassSimpleName = information.getReturnClassName().simpleName();
 
     var generatedCode =
         CodeBlock.builder()
             .addStatement(
                 "return $T.super.$L($L)",
-                TypeName.get(generatorInterface.asType()),
+                TypeName.get(information.getGeneratorType().asType()),
                 defaultMethod.getSimpleName(),
                 String.format("arbitrary%s", generatedClassSimpleName))
             .build();
 
-    var name =
-        "generate" + annotation.toString().substring(annotation.toString().lastIndexOf('.') + 1);
+    var name = "generate" + annotation.getSimpleName();
 
     var methodBuilder =
         MethodSpec.methodBuilder(name)
             .addModifiers(Modifier.PUBLIC)
-            .returns(returnType)
+            .returns(information.getReturnClassName())
             .addCode(generatedCode);
 
-    methodBuilder.addParameter(returnType, String.format("arbitrary%s", generatedClassSimpleName));
+    methodBuilder.addParameter(information.getReturnClassName(),
+        String.format("arbitrary%s", generatedClassSimpleName));
 
     this.generatedMethod = methodBuilder.build();
   }

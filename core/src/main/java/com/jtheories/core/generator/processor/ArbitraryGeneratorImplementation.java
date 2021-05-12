@@ -6,7 +6,6 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,14 +61,7 @@ public class ArbitraryGeneratorImplementation {
         .filter(e -> e.getKind() == ElementKind.METHOD)
         .filter(e -> e.getAnnotationMirrors().size() == 1)
         .map(ExecutableElement.class::cast)
-        .map(
-            executableElement ->
-                new ArbitraryConstrictorMethod(
-                    this.information.getGeneratorType(),
-                    TypeName.get(
-                        executableElement.getAnnotationMirrors().get(0).getAnnotationType()),
-                    this.information.getReturnClassName(),
-                    executableElement))
+        .map(this::createArbitraryConstrictorMethod)
         .map(ArbitraryConstrictorMethod::getGeneratedMethod)
         .collect(Collectors.toList());
 
@@ -96,6 +88,18 @@ public class ArbitraryGeneratorImplementation {
         .build();
     this.fileName =
         this.information.getGeneratorPackage() + "." + this.information.getImplementerName();
+  }
+
+  private ArbitraryConstrictorMethod createArbitraryConstrictorMethod(
+      ExecutableElement executableElement) {
+    var constrictorAnnotation = executableElement.getAnnotationMirrors()
+        .get(0)
+        .getAnnotationType()
+        .asElement();
+    return new ArbitraryConstrictorMethod(
+        this.information,
+        constrictorAnnotation,
+        executableElement);
   }
 
   public boolean isParameterized() {
