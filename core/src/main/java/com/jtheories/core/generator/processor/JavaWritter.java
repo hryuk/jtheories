@@ -19,13 +19,11 @@ public class JavaWritter {
   /**
    * Output a source file
    *
-   * @param arbitraryGeneratorImplementation the generator implementation
+   * @param generatorImplementation the generator implementation
    * @throws GeneratorProcessorException if the file cannot be created
    */
-  public void writeFile(ArbitraryGeneratorImplementation arbitraryGeneratorImplementation) {
-    this.writeFile(
-        arbitraryGeneratorImplementation.getFileName(),
-        arbitraryGeneratorImplementation.getJavaFile());
+  public void writeFile(GeneratorImplementation generatorImplementation) {
+    this.writeFile(generatorImplementation.getFileName(), generatorImplementation.getJavaFile());
   }
 
   /**

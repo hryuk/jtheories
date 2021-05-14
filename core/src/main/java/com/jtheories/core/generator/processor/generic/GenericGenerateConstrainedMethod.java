@@ -1,4 +1,4 @@
-package com.jtheories.core.generator.processor.generics;
+package com.jtheories.core.generator.processor.generic;
 
 import com.jtheories.core.generator.processor.GeneratorInformation;
 import com.squareup.javapoet.ClassName;
@@ -10,14 +10,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ArbitraryGenericGenerateConstrainedMethod {
+public class GenericGenerateConstrainedMethod {
 
   private final MethodSpec constrainedMethod;
   private final GeneratorInformation information;
 
-  public ArbitraryGenericGenerateConstrainedMethod(GeneratorInformation information) {
+  public GenericGenerateConstrainedMethod(GeneratorInformation information) {
     this.information = information;
-    var generatedClassName = information.getReturnClassName().simpleName();
 
     this.constrainedMethod =
         MethodSpec.methodBuilder("generateConstrained")

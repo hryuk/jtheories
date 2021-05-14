@@ -1,6 +1,7 @@
-package com.jtheories.core.generator.processor;
+package com.jtheories.core.generator.processor.arbitrary;
 
 import com.jtheories.core.generator.Generators;
+import com.jtheories.core.generator.processor.GeneratorInformation;
 import com.squareup.javapoet.*;
 
 import javax.lang.model.element.AnnotationMirror;

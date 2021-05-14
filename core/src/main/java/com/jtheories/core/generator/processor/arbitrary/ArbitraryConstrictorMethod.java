@@ -1,8 +1,10 @@
-package com.jtheories.core.generator.processor;
+package com.jtheories.core.generator.processor.arbitrary;
 
+import com.jtheories.core.generator.processor.GeneratorInformation;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
+
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -12,9 +14,7 @@ public class ArbitraryConstrictorMethod {
   private final MethodSpec generatedMethod;
 
   public ArbitraryConstrictorMethod(
-      GeneratorInformation information,
-      Element annotation,
-      ExecutableElement defaultMethod) {
+      GeneratorInformation information, Element annotation, ExecutableElement defaultMethod) {
 
     var generatedClassSimpleName = information.getReturnClassName().simpleName();
 
@@ -35,8 +35,8 @@ public class ArbitraryConstrictorMethod {
             .returns(information.getReturnClassName())
             .addCode(generatedCode);
 
-    methodBuilder.addParameter(information.getReturnClassName(),
-        String.format("arbitrary%s", generatedClassSimpleName));
+    methodBuilder.addParameter(
+        information.getReturnClassName(), String.format("arbitrary%s", generatedClassSimpleName));
 
     this.generatedMethod = methodBuilder.build();
   }
