@@ -1,4 +1,4 @@
-package com.jtheories.core.generator.processor;
+package com.jtheories.core.generator.processor.arbitrary;
 
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;

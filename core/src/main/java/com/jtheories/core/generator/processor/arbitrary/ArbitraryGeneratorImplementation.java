@@ -1,7 +1,9 @@
-package com.jtheories.core.generator.processor;
+package com.jtheories.core.generator.processor.arbitrary;
 
 import com.jtheories.core.generator.Generator;
-import com.jtheories.core.generator.processor.generics.ArbitraryGenericGenerateConstrainedMethod;
+import com.jtheories.core.generator.processor.GeneratorImplementation;
+import com.jtheories.core.generator.processor.GeneratorInformation;
+import com.jtheories.core.generator.processor.GeneratorProcessor;
 import com.squareup.javapoet.*;
 
 import javax.annotation.processing.Generated;
@@ -13,12 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ArbitraryGeneratorImplementation {
-
-  private final JavaFile javaFile;
-  private final String fileName;
-  private final GeneratorInformation information;
-
+public class ArbitraryGeneratorImplementation extends GeneratorImplementation {
   /**
    * Given a {@link TypeElement} representing a generator interface, generate its implementation
    *
@@ -26,10 +23,7 @@ public class ArbitraryGeneratorImplementation {
    *     GeneratorInformation} object
    */
   public ArbitraryGeneratorImplementation(GeneratorInformation information) {
-    this.information = information;
-    this.fileName =
-        String.format(
-            "%s.%s", this.information.getGeneratorPackage(), this.information.getImplementerName());
+    super(information);
     this.javaFile =
         JavaFile.builder(this.information.getGeneratorPackage(), createArbitraryGenerator())
             .build();
@@ -43,19 +37,17 @@ public class ArbitraryGeneratorImplementation {
 
     List<MethodSpec> generatorMethods = new ArrayList<>();
 
-    if (!this.information.isParameterized()) {
-      MethodSpec generate =
-          this.information.getGeneratorType().getEnclosedElements().stream()
-              .filter(e -> e.getKind() == ElementKind.METHOD)
-              .filter(e -> e.getAnnotationMirrors().isEmpty())
-              .map(ExecutableElement.class::cast)
-              .map(this::createArbitraryGenerateMethod)
-              .map(ArbitraryGenerateMethod::getGeneratedMethod)
-              .findAny()
-              .orElseThrow();
+    MethodSpec generate =
+        this.information.getGeneratorType().getEnclosedElements().stream()
+            .filter(e -> e.getKind() == ElementKind.METHOD)
+            .filter(e -> e.getAnnotationMirrors().isEmpty())
+            .map(ExecutableElement.class::cast)
+            .map(this::createArbitraryGenerateMethod)
+            .map(ArbitraryGenerateMethod::getGeneratedMethod)
+            .findAny()
+            .orElseThrow();
 
-      generatorMethods.add(generate);
-    }
+    generatorMethods.add(generate);
 
     List<MethodSpec> constrictorMethods =
         this.information.getGeneratorType().getEnclosedElements().stream()
@@ -68,14 +60,9 @@ public class ArbitraryGeneratorImplementation {
 
     generatorMethods.addAll(constrictorMethods);
 
-    if (this.information.isParameterized()) {
-      generatorMethods.add(
-          new ArbitraryGenericGenerateConstrainedMethod(this.information).getConstrainedMethod());
-    } else {
-      generatorMethods.add(
-          new ArbitraryGenerateConstrainedMethod(this.information.getReturnClassName())
-              .getConstrainedMethod());
-    }
+    generatorMethods.add(
+        new ArbitraryGenerateConstrainedMethod(this.information.getReturnClassName())
+            .getConstrainedMethod());
 
     TypeSpec.Builder typeBuilder =
         TypeSpec.classBuilder(this.information.getImplementerName())
@@ -86,10 +73,6 @@ public class ArbitraryGeneratorImplementation {
                     ClassName.get(Generator.class), this.information.getReturnClassName()))
             .addAnnotation(generatedAnnotation)
             .addMethods(generatorMethods);
-
-    if (information.isParameterized()) {
-      typeBuilder.addTypeVariable(TypeVariableName.get("T"));
-    }
 
     return typeBuilder.build();
   }
@@ -105,13 +88,5 @@ public class ArbitraryGeneratorImplementation {
         executableElement.getAnnotationMirrors().get(0).getAnnotationType().asElement();
     return new ArbitraryConstrictorMethod(
         this.information, constrictorAnnotation, executableElement);
-  }
-
-  public JavaFile getJavaFile() {
-    return javaFile;
-  }
-
-  public String getFileName() {
-    return fileName;
   }
 }
