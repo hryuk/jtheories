@@ -17,7 +17,7 @@
       <module name="core" target="11" />
       <module name="examples" target="11" />
       <module name="generators" target="11" />
-      <module name="JTheories" target="1.5" />
+      <module name="jtheories" target="11" />
       <module name="junit" target="11" />
     </bytecodeTargetLevel>
   </component>

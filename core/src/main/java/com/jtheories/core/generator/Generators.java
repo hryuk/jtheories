@@ -5,15 +5,14 @@ import com.jtheories.core.generator.exceptions.GeneratorInstantiationException;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
 public class Generators {
 
-  /**
-   * Expected name of the generator method
-   */
-  public static final String GENERATE = "generate";
+  /** Expected name of the generator method */
+  public static final String GENERATE = "generateConstrained";
 
   private Generators() {
     throw new AssertionError("This class cannot be instanced");
@@ -25,7 +24,8 @@ public class Generators {
           scanResult.getClassesImplementing("com.jtheories.core.generator.Generator");
 
       for (ClassInfo arbitraryGenerator : arbitraryGenerators) {
-        var generateMethod = arbitraryGenerator.loadClass().getDeclaredMethod(Generators.GENERATE);
+        var generateMethod =
+            arbitraryGenerator.loadClass().getDeclaredMethod(Generators.GENERATE, Class[].class);
         if (generateMethod.getReturnType().equals(generatedType)) {
           //noinspection unchecked
           return (Generator<T>) arbitraryGenerator.loadClass().getConstructor().newInstance();
@@ -51,7 +51,8 @@ public class Generators {
       throw new GenerationRuntimeException(
           String.format(
               "Could not call <%s>() on generator %s",
-              Generators.GENERATE + Arrays.toString(annotations), generatedType.getSimpleName()), e);
+              Generators.GENERATE + Arrays.toString(annotations), generatedType.getSimpleName()),
+          e);
     }
   }
 }

@@ -1,6 +1,7 @@
 package com.jtheories.core.generator.processor;
 
 import com.squareup.javapoet.ClassName;
+
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
@@ -78,4 +79,7 @@ public class GeneratorInformation {
     return returnType;
   }
 
+  public boolean isParameterized() {
+    return !this.getReturnType().getTypeParameters().isEmpty();
+  }
 }
