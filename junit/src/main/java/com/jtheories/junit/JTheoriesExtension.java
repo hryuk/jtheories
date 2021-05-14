@@ -13,10 +13,12 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class JTheoriesExtension implements ParameterResolver {
@@ -90,7 +92,11 @@ public class JTheoriesExtension implements ParameterResolver {
             (Class<?>) ((ParameterizedType) parameterType).getActualTypeArguments()[0];
         return generateMethod.invoke(generator, new Object[] {new Class[] {generatorType}});
       } else {
-        return generateMethod.invoke(generator, new Object[] {new Class[] {}});
+        Class<?>[] annotations =
+            Arrays.stream(parameterContext.getParameter().getAnnotations())
+                .map(Annotation::annotationType)
+                .toArray(Class[]::new);
+        return generateMethod.invoke(generator, new Object[] {annotations});
       }
 
     } catch (IllegalAccessException e) {
