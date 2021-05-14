@@ -12,6 +12,6 @@ public interface Generator<T> {
     throw new RuntimeException();
   }
 
-  T generateConstrained(Class<?>... annotations)
+  T generateConstrained(Class<?> type, Class<?>... annotations)
       throws NoSuchMethodException, InvocationTargetException, IllegalAccessException;
 }

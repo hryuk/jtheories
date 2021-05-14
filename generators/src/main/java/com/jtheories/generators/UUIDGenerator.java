@@ -2,6 +2,7 @@ package com.jtheories.generators;
 
 import com.jtheories.core.generator.processor.Generator;
 import com.jtheories.core.random.SourceOfRandom;
+
 import java.util.UUID;
 
 @Generator

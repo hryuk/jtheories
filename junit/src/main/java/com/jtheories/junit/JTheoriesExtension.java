@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -35,7 +36,9 @@ public class JTheoriesExtension implements ParameterResolver {
 
         Method generateMethod;
         generateMethod =
-            annotatedClass.loadClass().getDeclaredMethod(Generators.GENERATE, Class[].class);
+            annotatedClass
+                .loadClass()
+                .getDeclaredMethod(Generators.GENERATE, Class.class, Class[].class);
         availableGenerators.add(generateMethod.getReturnType());
       }
     } catch (NoSuchMethodException
@@ -65,7 +68,7 @@ public class JTheoriesExtension implements ParameterResolver {
                 gen -> {
                   try {
                     return gen.getClass()
-                        .getDeclaredMethod(Generators.GENERATE, Class[].class)
+                        .getDeclaredMethod(Generators.GENERATE, Class.class, Class[].class)
                         .getReturnType()
                         .equals(parameterContext.getParameter().getType());
                   } catch (NoSuchMethodException e) {
@@ -77,7 +80,8 @@ public class JTheoriesExtension implements ParameterResolver {
 
     Method generateMethod;
     try {
-      generateMethod = generator.getClass().getDeclaredMethod(Generators.GENERATE, Class[].class);
+      generateMethod =
+          generator.getClass().getDeclaredMethod(Generators.GENERATE, Class.class, Class[].class);
     } catch (NoSuchMethodException e) {
       throw new MissingGeneratorMethodException(
           String.format(
@@ -90,13 +94,21 @@ public class JTheoriesExtension implements ParameterResolver {
       if (parameterType instanceof ParameterizedType) {
         var generatorType =
             (Class<?>) ((ParameterizedType) parameterType).getActualTypeArguments()[0];
-        return generateMethod.invoke(generator, new Object[] {new Class[] {generatorType}});
+
+        var annotations =
+            Arrays.stream(
+                    ((AnnotatedParameterizedType)
+                            parameterContext.getParameter().getAnnotatedType())
+                        .getAnnotatedActualTypeArguments()[0].getAnnotations())
+                .map(Annotation::annotationType)
+                .toArray(Class<?>[]::new);
+        return generateMethod.invoke(generator, generatorType, annotations);
       } else {
         Class<?>[] annotations =
             Arrays.stream(parameterContext.getParameter().getAnnotations())
                 .map(Annotation::annotationType)
                 .toArray(Class[]::new);
-        return generateMethod.invoke(generator, new Object[] {annotations});
+        return generateMethod.invoke(generator, null, annotations);
       }
 
     } catch (IllegalAccessException e) {

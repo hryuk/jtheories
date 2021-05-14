@@ -29,11 +29,11 @@ public class ArbitraryGenericGenerateConstrainedMethod {
                         IllegalAccessException.class)
                     .map(TypeName::get)
                     .collect(Collectors.toList()))
+            .addParameter(Class.class, "type")
             .addParameter(Class[].class, "annotations")
             .varargs(true)
-            // TODO: DONT use annotations parameters as generic type parameter
             .addStatement(
-                "return $T.super.generate(annotations[0])", this.information.getClassName())
+                "return $T.super.generate(type, annotations)", this.information.getClassName())
             .returns(this.information.getReturnClassName())
             .build();
   }

@@ -9,9 +9,14 @@ import java.util.stream.IntStream;
 
 @Generator
 public interface CollectionGenerator<T> {
-  default Collection<T> generate(Class<T> type) {
+  default Collection<T> generate(Class<T> type, Class<T>... annotations) {
     Collection<T> generatedCollection = new ArrayList<>();
-    IntStream.range(0, 100).forEach(i -> generatedCollection.add(Generators.gen(type)));
+    IntStream.range(0, 100)
+        .forEach(
+            i -> {
+              T generated = Generators.gen(type, annotations);
+              generatedCollection.add(generated);
+            });
     return generatedCollection;
   }
 }

@@ -12,5 +12,4 @@ class VeryRealClassTest {
   void doSomethingTest(VeryRealClass veryRealClass) {
     Assertions.assertNotNull(veryRealClass);
   }
-
 }
