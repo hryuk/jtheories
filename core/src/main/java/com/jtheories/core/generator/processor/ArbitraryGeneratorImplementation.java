@@ -42,17 +42,20 @@ public class ArbitraryGeneratorImplementation {
             .build();
 
     List<MethodSpec> generatorMethods = new ArrayList<>();
-    MethodSpec generate =
-        this.information.getGeneratorType().getEnclosedElements().stream()
-            .filter(e -> e.getKind() == ElementKind.METHOD)
-            .filter(e -> e.getAnnotationMirrors().isEmpty())
-            .map(ExecutableElement.class::cast)
-            .map(this::createArbitraryGenerateMethod)
-            .map(ArbitraryGenerateMethod::getGeneratedMethod)
-            .findAny()
-            .orElseThrow();
 
-    generatorMethods.add(generate);
+    if (!this.information.isParameterized()) {
+      MethodSpec generate =
+          this.information.getGeneratorType().getEnclosedElements().stream()
+              .filter(e -> e.getKind() == ElementKind.METHOD)
+              .filter(e -> e.getAnnotationMirrors().isEmpty())
+              .map(ExecutableElement.class::cast)
+              .map(this::createArbitraryGenerateMethod)
+              .map(ArbitraryGenerateMethod::getGeneratedMethod)
+              .findAny()
+              .orElseThrow();
+
+      generatorMethods.add(generate);
+    }
 
     List<MethodSpec> constrictorMethods =
         this.information.getGeneratorType().getEnclosedElements().stream()

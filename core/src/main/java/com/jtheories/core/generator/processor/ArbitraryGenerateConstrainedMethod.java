@@ -1,12 +1,10 @@
 package com.jtheories.core.generator.processor;
 
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.VariableElement;
 import java.lang.reflect.InvocationTargetException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,6 +28,7 @@ public class ArbitraryGenerateConstrainedMethod {
                         IllegalAccessException.class)
                     .map(TypeName::get)
                     .collect(Collectors.toList()))
+            .addParameter(Class.class, "type")
             .addParameter(Class[].class, "annotations")
             .varargs(true)
             .addStatement("$T constrained$N = generate()", returnType, generatedClassName)

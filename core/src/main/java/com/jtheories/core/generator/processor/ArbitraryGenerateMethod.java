@@ -106,17 +106,12 @@ public class ArbitraryGenerateMethod {
     var parentInterface = ClassName.get(Generators.class);
 
     if (annotationMirrors.isEmpty()) {
-      if (this.information.isParameterized()) {
-        return CodeBlock.of(
-            "$T generated_$N = (Class)$T.gen(type)", parameterType, parameterSpec, parentInterface);
-      } else {
-        return CodeBlock.of(
-            "$T generated_$N = $T.gen($T.class)",
-            parameterType,
-            parameterSpec,
-            parentInterface,
-            parameterType);
-      }
+      return CodeBlock.of(
+          "$T generated_$N = $T.gen($T.class)",
+          parameterType,
+          parameterSpec,
+          parentInterface,
+          parameterType);
     } else {
       List<CodeBlock> annotatedTypes =
           annotationMirrors.stream()

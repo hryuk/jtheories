@@ -13,7 +13,7 @@ import java.util.UUID;
 @ExtendWith(JTheoriesExtension.class)
 class ProductTest {
 
-  @RepeatedTest(200)
+  @RepeatedTest(10)
   void productHasPriceAndName(Product product) {
     Assertions.assertEquals(product.getId(), UUID.fromString(product.getId().toString()));
     Assertions.assertTrue(product.getPrice() > 0);
@@ -38,13 +38,10 @@ class ProductTest {
   }
 
   @Test
-  void productListHavePriceAndName(List<Product> products) {
+  void productListIsFree(List<@Free Product> products) {
     products.forEach(
         (product) -> {
-          Assertions.assertEquals(product.getId(), UUID.fromString(product.getId().toString()));
-          Assertions.assertTrue(product.getPrice() > 0);
-          Assertions.assertNotNull(product.getName());
-          Assertions.assertNotEquals(0, product.getPrice() % 10);
+          Assertions.assertEquals(0L, product.getPrice());
         });
   }
 }

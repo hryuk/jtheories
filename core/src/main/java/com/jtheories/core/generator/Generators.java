@@ -25,7 +25,9 @@ public class Generators {
 
       for (ClassInfo arbitraryGenerator : arbitraryGenerators) {
         var generateMethod =
-            arbitraryGenerator.loadClass().getDeclaredMethod(Generators.GENERATE, Class[].class);
+            arbitraryGenerator
+                .loadClass()
+                .getDeclaredMethod(Generators.GENERATE, Class.class, Class[].class);
         if (generateMethod.getReturnType().equals(generatedType)) {
           //noinspection unchecked
           return (Generator<T>) arbitraryGenerator.loadClass().getConstructor().newInstance();
@@ -46,7 +48,7 @@ public class Generators {
   public static <T> T gen(Class<T> generatedType, Class<?>... annotations) {
     Generator<T> generator = getGenerator(generatedType);
     try {
-      return generator.generateConstrained(annotations);
+      return generator.generateConstrained(generatedType, annotations);
     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       throw new GenerationRuntimeException(
           String.format(
