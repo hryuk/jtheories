@@ -2,25 +2,16 @@ package com.jtheories.core.generator.processor;
 
 import com.google.auto.service.AutoService;
 import com.jtheories.core.generator.exceptions.GeneratorProcessorException;
-import com.squareup.javapoet.JavaFile;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Collection;
-import java.util.Set;
-import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.Messager;
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.annotation.processing.Processor;
-import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.annotation.processing.SupportedSourceVersion;
+
+import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
+import java.util.Collection;
+import java.util.Set;
 
 @SupportedAnnotationTypes("com.jtheories.core.generator.processor.Generator")
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
@@ -29,12 +20,14 @@ public class GeneratorProcessor extends AbstractProcessor {
 
   private Messager messager = null;
   private Types typeUtils;
+  private JavaWritter javaWritter;
 
   @Override
   public synchronized void init(ProcessingEnvironment processingEnv) {
     super.init(processingEnv);
     this.messager = processingEnv.getMessager();
     this.typeUtils = processingEnv.getTypeUtils();
+    this.javaWritter = new JavaWritter(processingEnv.getFiler());
   }
 
   @Override
@@ -48,8 +41,7 @@ public class GeneratorProcessor extends AbstractProcessor {
           .map(TypeElement.class::cast)
           .map(typeElement -> new GeneratorInformation(typeUtils, typeElement))
           .map(ArbitraryGeneratorImplementation::new)
-          .forEach(this::writeFile);
-
+          .forEach(this.javaWritter::writeFile);
     } catch (GeneratorProcessorException e) {
       fatal(e.getMessage());
     }
@@ -71,42 +63,6 @@ public class GeneratorProcessor extends AbstractProcessor {
     }
 
     return true;
-  }
-
-  /**
-   * Output a source file
-   *
-   * @param arbitraryGeneratorImplementation the generator implementation
-   * @throws GeneratorProcessorException if the file cannot be created
-   */
-  private void writeFile(ArbitraryGeneratorImplementation arbitraryGeneratorImplementation) {
-    this.writeFile(
-        arbitraryGeneratorImplementation.getFileName(),
-        arbitraryGeneratorImplementation.getJavaFile());
-  }
-
-  /**
-   * Output a source file
-   *
-   * @param sourceFileName the source file's name
-   * @param javaFile       the file content
-   * @throws GeneratorProcessorException if the file cannot be created
-   */
-  private void writeFile(String sourceFileName, JavaFile javaFile) {
-    JavaFileObject builderFile;
-    try {
-      builderFile = this.processingEnv.getFiler().createSourceFile(sourceFileName);
-    } catch (IOException e) {
-      throw new GeneratorProcessorException(
-          String.format("Error creating generated file %s", sourceFileName), e);
-    }
-
-    try (var out = new PrintWriter(builderFile.openWriter())) {
-      javaFile.writeTo(out);
-    } catch (IOException e) {
-      throw new GeneratorProcessorException(
-          String.format("Error writing generated file %s", sourceFileName), e);
-    }
   }
 
   private void fatal(String format, Object... args) {

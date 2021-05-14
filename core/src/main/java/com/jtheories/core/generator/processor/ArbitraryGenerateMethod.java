@@ -1,61 +1,70 @@
 package com.jtheories.core.generator.processor;
 
-import com.jtheories.core.generator.Generator;
 import com.jtheories.core.generator.Generators;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterSpec;
-import com.squareup.javapoet.TypeName;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.squareup.javapoet.*;
+
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ArbitraryGenerateMethod {
 
   MethodSpec generatedMethod;
 
+  GeneratorInformation information;
+
   /**
    * Generates an implementation for a generator method, defined in a generator interface
    *
-   * @param information   the  declared generator interface information enclosed in a {@link
-   *                      GeneratorInformation} object
+   * @param information the declared generator interface information enclosed in a {@link
+   *     GeneratorInformation} object
    * @param defaultMethod the method whose implementation needs to be generated
    */
-  public ArbitraryGenerateMethod(GeneratorInformation information,
-      ExecutableElement defaultMethod) {
+  public ArbitraryGenerateMethod(
+      GeneratorInformation information, ExecutableElement defaultMethod) {
 
-    var generatorInterface = information.getGeneratorType();
-    var returnType = information.getReturnClassName();
-    var generatedCode = generateCodeBlock(generatorInterface, defaultMethod);
-    var methodBuilder =
-        MethodSpec.methodBuilder("generate")
-            .addModifiers(Modifier.PUBLIC)
-            .returns(returnType)
-            .addCode(generatedCode);
+    this.information = information;
 
-    this.generatedMethod = methodBuilder.build();
+    if (!information.isParameterized()) {
+      var returnType = information.getReturnClassName();
+      var generatedCode = generateCodeBlock(defaultMethod);
+      var methodBuilder =
+          MethodSpec.methodBuilder("generate")
+              .addModifiers(Modifier.PUBLIC)
+              .returns(returnType)
+              .addCode(generatedCode);
+
+      this.generatedMethod = methodBuilder.build();
+    } else {
+      var returnType = information.getReturnClassName();
+      var generatedCode = generateCodeBlock(defaultMethod);
+      var methodBuilder =
+          MethodSpec.methodBuilder("generate")
+              .addModifiers(Modifier.PUBLIC)
+              .addParameter(Class.class, "type")
+              .returns(returnType)
+              .addCode(generatedCode);
+
+      this.generatedMethod = methodBuilder.build();
+    }
   }
 
   /**
    * Generates a code block implementing a generator method that calls its parent's default
    * implementation with a generated value for each of its parameters
    *
-   * @param generatorInterface the interface annotated with {@link Generator}
-   * @param defaultMethod      the generator method implemented by default on the interface
+   * @param defaultMethod the generator method implemented by default on the interface
    * @return a {@link CodeBlock} containing the code for the generated implementation
    */
-  private static CodeBlock generateCodeBlock(
-      TypeElement generatorInterface, ExecutableElement defaultMethod) {
+  private CodeBlock generateCodeBlock(ExecutableElement defaultMethod) {
     var codeBlockBuilder = CodeBlock.builder();
 
     // Add assignment for each parameter
     defaultMethod.getParameters().stream()
-        .map(ArbitraryGenerateMethod::generateAssignment)
+        .map(this::generateAssignment)
         .forEach(codeBlockBuilder::addStatement);
 
     // Create code block
@@ -67,7 +76,7 @@ public class ArbitraryGenerateMethod {
     // Add return of parent's default method result
     codeBlockBuilder.addStatement(
         "return $T.super.$L($L)",
-        TypeName.get(generatorInterface.asType()),
+        this.information.getClassName(),
         defaultMethod.getSimpleName(),
         codeBlock);
 
@@ -89,7 +98,7 @@ public class ArbitraryGenerateMethod {
    * @param parameter a generator method's parameter represented by a {@link VariableElement}
    * @return a {@link CodeBlock} with the assignment code
    */
-  private static CodeBlock generateAssignment(VariableElement parameter) {
+  private CodeBlock generateAssignment(VariableElement parameter) {
     var annotationMirrors = parameter.getAnnotationMirrors();
 
     var parameterType = TypeName.get(parameter.asType());
@@ -97,12 +106,17 @@ public class ArbitraryGenerateMethod {
     var parentInterface = ClassName.get(Generators.class);
 
     if (annotationMirrors.isEmpty()) {
-      return CodeBlock.of(
-          "$T generated_$N = $T.gen($T.class)",
-          parameterType,
-          parameterSpec,
-          parentInterface,
-          parameterType);
+      if (this.information.isParameterized()) {
+        return CodeBlock.of(
+            "$T generated_$N = (Class)$T.gen(type)", parameterType, parameterSpec, parentInterface);
+      } else {
+        return CodeBlock.of(
+            "$T generated_$N = $T.gen($T.class)",
+            parameterType,
+            parameterSpec,
+            parentInterface,
+            parameterType);
+      }
     } else {
       List<CodeBlock> annotatedTypes =
           annotationMirrors.stream()

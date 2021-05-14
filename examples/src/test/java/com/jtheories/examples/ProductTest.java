@@ -1,19 +1,19 @@
 package com.jtheories.examples;
 
 import com.jtheories.junit.JTheoriesExtension;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(JTheoriesExtension.class)
 class ProductTest {
 
   @RepeatedTest(200)
-  void doSomethingTest(Product product) {
+  void productHasPriceAndName(Product product) {
     Assertions.assertEquals(product.getId(), UUID.fromString(product.getId().toString()));
     Assertions.assertTrue(product.getPrice() > 0);
     Assertions.assertNotNull(product.getName());
@@ -24,9 +24,8 @@ class ProductTest {
     Assertions.assertEquals(0L, product.getPrice());
   }
 
-  @RepeatedTest(200)
-  @Disabled
-  void doSomethingTest(Collection<Product> products) {
+  @Test
+  void productsHavePriceAndName(Collection<Product> products) {
     products.forEach(
         (product) -> {
           Assertions.assertEquals(product.getId(), UUID.fromString(product.getId().toString()));

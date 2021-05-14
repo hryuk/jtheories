@@ -8,14 +8,16 @@ import com.jtheories.core.generator.exceptions.MissingGeneratorMethodException;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
+import java.util.List;
 
 public class JTheoriesExtension implements ParameterResolver {
 
@@ -28,7 +30,10 @@ public class JTheoriesExtension implements ParameterResolver {
           scanResult.getClassesImplementing("com.jtheories.core.generator.Generator");
       for (ClassInfo annotatedClass : generatorClasses) {
         generators.add(annotatedClass.loadClass().getConstructor().newInstance());
-        var generateMethod = annotatedClass.loadClass().getDeclaredMethod(Generators.GENERATE);
+
+        Method generateMethod;
+        generateMethod =
+            annotatedClass.loadClass().getDeclaredMethod(Generators.GENERATE, Class[].class);
         availableGenerators.add(generateMethod.getReturnType());
       }
     } catch (NoSuchMethodException
@@ -58,7 +63,7 @@ public class JTheoriesExtension implements ParameterResolver {
                 gen -> {
                   try {
                     return gen.getClass()
-                        .getDeclaredMethod(Generators.GENERATE)
+                        .getDeclaredMethod(Generators.GENERATE, Class[].class)
                         .getReturnType()
                         .equals(parameterContext.getParameter().getType());
                   } catch (NoSuchMethodException e) {
@@ -70,7 +75,7 @@ public class JTheoriesExtension implements ParameterResolver {
 
     Method generateMethod;
     try {
-      generateMethod = generator.getClass().getDeclaredMethod(Generators.GENERATE);
+      generateMethod = generator.getClass().getDeclaredMethod(Generators.GENERATE, Class[].class);
     } catch (NoSuchMethodException e) {
       throw new MissingGeneratorMethodException(
           String.format(
@@ -79,7 +84,15 @@ public class JTheoriesExtension implements ParameterResolver {
     }
 
     try {
-      return generateMethod.invoke(generator);
+      var parameterType = parameterContext.getParameter().getParameterizedType();
+      if (parameterType instanceof ParameterizedType) {
+        var generatorType =
+            (Class<?>) ((ParameterizedType) parameterType).getActualTypeArguments()[0];
+        return generateMethod.invoke(generator, new Object[] {new Class[] {generatorType}});
+      } else {
+        return generateMethod.invoke(generator, new Object[] {new Class[] {}});
+      }
+
     } catch (IllegalAccessException e) {
       throw new IllegalGeneratorMethodAccessException(
           String.format(
