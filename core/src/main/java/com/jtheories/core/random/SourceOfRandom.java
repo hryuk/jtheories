@@ -4,7 +4,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * This class allows for controlled randomness generators to be used in the library generators.
+ * This class allows for controlled randomness sources to be used in generators.
  * <p>
  * The class can be randomly reseeded at class level at any time vía {@link SourceOfRandom#reseed()}
  * or a seed can be specified using {@link SourceOfRandom#reseed(long)}.</p>
