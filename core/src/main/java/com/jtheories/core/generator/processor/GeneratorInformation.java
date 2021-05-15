@@ -11,7 +11,8 @@ import javax.lang.model.util.Types;
 
 public class GeneratorInformation {
 
-  private static final String IMPL_TEMPLATE = "Arbitrary%sGenerator";
+  private static final String ARBITRARY_TEMPLATE = "Arbitrary%sGenerator";
+  private static final String GENERICS_TEMPLATE = "Generic%sGenerator";
 
   private final Types typeUtils;
   private final TypeElement generatorType;
@@ -28,7 +29,10 @@ public class GeneratorInformation {
     this.returnClassName = ClassName.get(returnType);
     this.className = ClassName.get(generatorType);
     this.generatorPackage = this.className.packageName();
-    this.implementerName = String.format(IMPL_TEMPLATE, this.returnClassName.simpleName());
+    this.implementerName =
+        String.format(
+            isParameterized() ? GENERICS_TEMPLATE : ARBITRARY_TEMPLATE,
+            this.returnClassName.simpleName());
   }
 
   public ClassName getReturnClassName() {
@@ -81,5 +85,9 @@ public class GeneratorInformation {
 
   public boolean isParameterized() {
     return !this.getReturnType().getTypeParameters().isEmpty();
+  }
+
+  public String getSimpleName(TypeMirror type) {
+    return this.typeUtils.asElement(type).getSimpleName().toString();
   }
 }

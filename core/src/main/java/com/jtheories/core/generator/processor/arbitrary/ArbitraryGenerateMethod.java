@@ -1,6 +1,7 @@
 package com.jtheories.core.generator.processor.arbitrary;
 
 import com.jtheories.core.generator.Generators;
+import com.jtheories.core.generator.processor.GenerateMethod;
 import com.jtheories.core.generator.processor.GeneratorInformation;
 import com.squareup.javapoet.*;
 
@@ -29,28 +30,17 @@ public class ArbitraryGenerateMethod {
 
     this.information = information;
 
-    if (!information.isParameterized()) {
-      var returnType = information.getReturnClassName();
-      var generatedCode = generateCodeBlock(defaultMethod);
-      var methodBuilder =
-          MethodSpec.methodBuilder("generate")
-              .addModifiers(Modifier.PUBLIC)
-              .returns(returnType)
-              .addCode(generatedCode);
+    var returnType = information.getReturnClassName();
+    var generatedCode = generateCodeBlock(defaultMethod);
+    var methodBuilder =
+        MethodSpec.methodBuilder("generate")
+            .addModifiers(Modifier.PUBLIC)
+            .returns(returnType)
+            .addCode(generatedCode);
 
-      this.generatedMethod = methodBuilder.build();
-    } else {
-      var returnType = information.getReturnClassName();
-      var generatedCode = generateCodeBlock(defaultMethod);
-      var methodBuilder =
-          MethodSpec.methodBuilder("generate")
-              .addModifiers(Modifier.PUBLIC)
-              .addParameter(Class.class, "type")
-              .returns(returnType)
-              .addCode(generatedCode);
+    methodBuilder.addAnnotation(GenerateMethod.class);
 
-      this.generatedMethod = methodBuilder.build();
-    }
+    this.generatedMethod = methodBuilder.build();
   }
 
   /**

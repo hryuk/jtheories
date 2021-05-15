@@ -61,10 +61,11 @@ public class ArbitraryGeneratorImplementation extends GeneratorImplementation {
     generatorMethods.addAll(constrictorMethods);
 
     generatorMethods.add(
-        new ArbitraryGenerateConstrainedMethod(this.information.getReturnClassName())
+        new ArbitraryGenerateConstrainedMethod(
+                this.information.getReturnClassName(), constrictorMethods)
             .getConstrainedMethod());
 
-    TypeSpec.Builder typeBuilder =
+    var typeBuilder =
         TypeSpec.classBuilder(this.information.getImplementerName())
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
             .addSuperinterface(this.information.getClassName())
