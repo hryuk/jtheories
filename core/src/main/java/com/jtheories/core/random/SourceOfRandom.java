@@ -21,12 +21,15 @@ public class SourceOfRandom {
 
   // Used for seeding, since seeds cannot be normally extracted from Random.class
   private static final Random SEEDER = new Random();
+  // Keep the count of times this has been reseeded
+  private static final AtomicLong counter = new AtomicLong();
   // Class level Random and seed
   private static Random parentRandom;
   private static long parentSeed;
 
-  // Keep the count of times this has been reseeded
-  private static AtomicLong counter;
+  static {
+    reseed();
+  }
 
   // Instance level Random and seed, a copy of parent at the time of creation of the instance
   private final Random random;
