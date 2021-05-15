@@ -33,7 +33,7 @@ import java.util.stream.IntStream;
 public interface CollectionGenerator<T> {
 
 
-  default Collection<T> generate(Class<T> type, Class<?>... annotations) {
+  default Collection<T> generate(Class<T> type, Class<T>... annotations) {
     SourceOfRandom random = Generators.getGenerator(SourceOfRandom.class).generate();
     Supplier<Collection<T>> c = random.choice(
         ArrayDeque::new, ArrayList::new, BeanContextServicesSupport::new, BeanContextSupport::new,
