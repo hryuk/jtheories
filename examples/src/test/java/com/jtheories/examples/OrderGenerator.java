@@ -1,10 +1,12 @@
 package com.jtheories.examples;
 
-import java.util.List;
+import com.jtheories.core.generator.processor.Generator;
 
-// @Generator
+import java.util.Collection;
+
+@Generator
 public interface OrderGenerator {
-  default Order generate(List<Product> items) {
+  default Order generate(final Collection<Product> items) {
     return new Order(items);
   }
 }

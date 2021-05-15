@@ -9,6 +9,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -94,30 +95,40 @@ public class ArbitraryGenerateMethod {
 
     var parameterType = TypeName.get(parameter.asType());
     var parameterSpec = ParameterSpec.get(parameter);
-    var parentInterface = ClassName.get(Generators.class);
+    var typeArguments = ((DeclaredType) parameter.asType()).getTypeArguments();
 
-    if (annotationMirrors.isEmpty()) {
+    if (!typeArguments.isEmpty()) {
       return CodeBlock.of(
-          "$T generated_$N = $T.gen($T.class)",
+          "$T generated_$N = $T.getGenerator($T.class).generateConstrained($T.class)",
           parameterType,
           parameterSpec,
-          parentInterface,
-          parameterType);
+          Generators.class,
+          this.information.getTypeUtils().erasure(parameter.asType()),
+          typeArguments.get(0));
     } else {
-      List<CodeBlock> annotatedTypes =
-          annotationMirrors.stream()
-              .map(AnnotationMirror::getAnnotationType)
-              .map(ClassName::get)
-              .map(annotationType -> CodeBlock.of("$T.class", annotationType))
-              .collect(Collectors.toList());
+      if (annotationMirrors.isEmpty()) {
+        return CodeBlock.of(
+            "$T generated_$N = $T.gen($T.class)",
+            parameterType,
+            parameterSpec,
+            Generators.class,
+            parameterType);
+      } else {
+        List<CodeBlock> annotatedTypes =
+            annotationMirrors.stream()
+                .map(AnnotationMirror::getAnnotationType)
+                .map(ClassName::get)
+                .map(annotationType -> CodeBlock.of("$T.class", annotationType))
+                .collect(Collectors.toList());
 
-      return CodeBlock.of(
-          "$T generated_$N = $T.gen($T.class, $L)",
-          parameterType,
-          parameterSpec,
-          parentInterface,
-          parameterType,
-          CodeBlock.join(annotatedTypes, ", "));
+        return CodeBlock.of(
+            "$T generated_$N = $T.gen($T.class, $L)",
+            parameterType,
+            parameterSpec,
+            Generators.class,
+            parameterType,
+            CodeBlock.join(annotatedTypes, ", "));
+      }
     }
   }
 

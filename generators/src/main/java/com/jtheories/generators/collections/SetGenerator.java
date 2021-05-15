@@ -2,7 +2,7 @@ package com.jtheories.generators.collections;
 
 import com.jtheories.core.generator.Generators;
 import com.jtheories.core.generator.processor.Generator;
-import java.lang.reflect.InvocationTargetException;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -10,8 +10,7 @@ import java.util.Set;
 @Generator
 public interface SetGenerator<T> {
 
-  default Set<T> generate(Class<T> type, Class<T>... types)
-      throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+  default Set<T> generate(Class<T> type, Class<T>... types) {
     var collectionGenerator = Generators.getGenerator(Collection.class);
 
     @SuppressWarnings("unchecked")

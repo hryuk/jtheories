@@ -1,21 +1,19 @@
 package com.jtheories.core.generator;
 
-import com.jtheories.core.generator.exceptions.GenerationRuntimeException;
 import com.jtheories.core.generator.exceptions.GeneratorInstantiationException;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
+
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class Generators {
 
-  /**
-   * Expected name of the generator method
-   */
+  /** Expected name of the generator method */
   public static final String GENERATE = "generateConstrained";
+
   private static final ConcurrentMap<Class<?>, Generator<?>> cache = new ConcurrentHashMap<>();
 
   private Generators() {
@@ -56,14 +54,6 @@ public class Generators {
 
   public static <T> T gen(Class<T> generatedType, Class<?>... annotations) {
     Generator<T> generator = getGenerator(generatedType);
-    try {
-      return generator.generateConstrained(generatedType, annotations);
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-      throw new GenerationRuntimeException(
-          String.format(
-              "Could not call <%s>() on generator %s",
-              Generators.GENERATE + Arrays.toString(annotations), generatedType.getSimpleName()),
-          e);
-    }
+    return generator.generateConstrained(generatedType, annotations);
   }
 }

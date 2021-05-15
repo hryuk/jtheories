@@ -90,4 +90,8 @@ public class GeneratorInformation {
   public String getSimpleName(TypeMirror type) {
     return this.typeUtils.asElement(type).getSimpleName().toString();
   }
+
+  public Types getTypeUtils() {
+    return typeUtils;
+  }
 }
