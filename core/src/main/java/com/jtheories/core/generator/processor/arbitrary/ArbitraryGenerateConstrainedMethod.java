@@ -4,7 +4,6 @@ import com.jtheories.core.generator.Generators;
 import com.jtheories.core.generator.processor.GenerateMethod;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
 
 import javax.lang.model.element.Modifier;
 import java.lang.reflect.InvocationTargetException;
@@ -14,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ArbitraryGenerateConstrainedMethod {
 
@@ -29,13 +27,6 @@ public class ArbitraryGenerateConstrainedMethod {
     this.constrainedMethod =
         MethodSpec.methodBuilder("generateConstrained")
             .addModifiers(Modifier.PUBLIC)
-            .addExceptions(
-                Stream.of(
-                        NoSuchMethodException.class,
-                        InvocationTargetException.class,
-                        IllegalAccessException.class)
-                    .map(TypeName::get)
-                    .collect(Collectors.toList()))
             .addParameter(Class.class, "type")
             .addParameter(Class[].class, "annotations")
             .varargs(true)
@@ -70,6 +61,7 @@ public class ArbitraryGenerateConstrainedMethod {
                 returnType,
                 generatedClassName,
                 generatedClassName)
+            .beginControlFlow("try")
             .addStatement(
                 "constrained$N = ($T) Arrays.stream(this.getClass().getDeclaredMethods())\n"
                     + "             .filter(m -> m.getName().equals(constrictorName))\n"
@@ -83,6 +75,10 @@ public class ArbitraryGenerateConstrainedMethod {
                 returnType,
                 returnType,
                 generatedClassName)
+            .nextControlFlow(
+                "catch ($T|$T e)", IllegalAccessException.class, InvocationTargetException.class)
+            .addStatement("throw new RuntimeException(\"Error calling generate method\",e)")
+            .endControlFlow()
             .endControlFlow()
             .addCode("\n")
             .addStatement("return constrained$N", generatedClassName)

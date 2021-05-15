@@ -3,12 +3,8 @@ package com.jtheories.core.generator.processor.generic;
 import com.jtheories.core.generator.processor.GeneratorInformation;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
 
 import javax.lang.model.element.Modifier;
-import java.lang.reflect.InvocationTargetException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class GenericGenerateConstrainedMethod {
 
@@ -21,13 +17,6 @@ public class GenericGenerateConstrainedMethod {
     this.constrainedMethod =
         MethodSpec.methodBuilder("generateConstrained")
             .addModifiers(Modifier.PUBLIC)
-            .addExceptions(
-                Stream.of(
-                        NoSuchMethodException.class,
-                        InvocationTargetException.class,
-                        IllegalAccessException.class)
-                    .map(TypeName::get)
-                    .collect(Collectors.toList()))
             .addParameter(Class.class, "type")
             .addParameter(Class[].class, "annotations")
             .varargs(true)
