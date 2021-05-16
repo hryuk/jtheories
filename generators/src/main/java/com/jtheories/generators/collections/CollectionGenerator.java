@@ -5,8 +5,21 @@ import com.jtheories.core.generator.processor.Generator;
 import com.jtheories.core.random.SourceOfRandom;
 import java.beans.beancontext.BeanContextServicesSupport;
 import java.beans.beancontext.BeanContextSupport;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.Stack;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,7 +35,6 @@ public interface CollectionGenerator<T> {
 			BeanContextSupport::new,
 			ConcurrentLinkedDeque::new,
 			ConcurrentLinkedQueue::new,
-			ConcurrentSkipListSet::new,
 			CopyOnWriteArrayList::new,
 			CopyOnWriteArraySet::new,
 			HashSet::new,
@@ -31,11 +43,7 @@ public interface CollectionGenerator<T> {
 			LinkedHashSet::new,
 			LinkedList::new,
 			LinkedTransferQueue::new,
-			PriorityBlockingQueue::new,
-			PriorityQueue::new,
 			Stack::new,
-			SynchronousQueue::new,
-			TreeSet::new,
 			Vector::new
 		);
 		return IntStream

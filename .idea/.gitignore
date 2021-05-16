@@ -10,3 +10,7 @@
 /sonarlint
 
 /misc.xml
+/compiler.xml
+/watcherTasks.xml
+/codeStyles/**
+/checkstyle-idea.xml
