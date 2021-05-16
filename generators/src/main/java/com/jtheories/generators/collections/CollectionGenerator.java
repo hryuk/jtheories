@@ -27,7 +27,7 @@ import java.util.stream.IntStream;
 @Generator
 public interface CollectionGenerator<T> {
 	default Collection<T> generate(Class<T> type, Class<T>... annotations) {
-		SourceOfRandom random = Generators.getGenerator(SourceOfRandom.class).generate();
+		SourceOfRandom random = Generators.getGenerator(SourceOfRandom.class).generateBasic();
 		Supplier<Collection<T>> c = random.choice(
 			ArrayDeque::new,
 			ArrayList::new,
