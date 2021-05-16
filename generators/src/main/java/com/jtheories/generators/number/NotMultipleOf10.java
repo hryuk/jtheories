@@ -8,9 +8,8 @@ import com.jtheories.core.generator.processor.GeneratorConstrain;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-@Target({PARAMETER, METHOD})
+@Target({ PARAMETER, METHOD })
 @Retention(RUNTIME)
 @GeneratorConstrain
 public @interface NotMultipleOf10 {
-
 }

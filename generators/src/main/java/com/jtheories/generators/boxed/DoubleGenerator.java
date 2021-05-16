@@ -5,8 +5,7 @@ import com.jtheories.core.random.SourceOfRandom;
 
 @Generator
 public interface DoubleGenerator {
-
-  default Double generate(SourceOfRandom random) {
-    return random.getRandom().nextDouble();
-  }
+	default Double generate(SourceOfRandom random) {
+		return random.getRandom().nextDouble();
+	}
 }

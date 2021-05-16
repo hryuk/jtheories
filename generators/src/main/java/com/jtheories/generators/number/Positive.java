@@ -11,9 +11,8 @@ import java.lang.annotation.Target;
 /**
  * Constrains the generator to strictly positive (>0) values
  */
-@Target({PARAMETER, METHOD})
+@Target({ PARAMETER, METHOD })
 @Retention(RUNTIME)
 @GeneratorConstrain
 public @interface Positive {
-
 }

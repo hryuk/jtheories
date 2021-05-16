@@ -5,89 +5,108 @@ import com.jtheories.core.generator.processor.GeneratorImplementation;
 import com.jtheories.core.generator.processor.GeneratorInformation;
 import com.jtheories.core.generator.processor.GeneratorProcessor;
 import com.squareup.javapoet.*;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.processing.Generated;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class ArbitraryGeneratorImplementation extends GeneratorImplementation {
-  /**
-   * Given a {@link TypeElement} representing a generator interface, generate its implementation
-   *
-   * @param information the information about the interface to be implemented contained in a {@link
-   *     GeneratorInformation} object
-   */
-  public ArbitraryGeneratorImplementation(GeneratorInformation information) {
-    super(information);
-    this.javaFile =
-        JavaFile.builder(this.information.getGeneratorPackage(), createArbitraryGenerator())
-            .build();
-  }
 
-  private TypeSpec createArbitraryGenerator() {
-    AnnotationSpec generatedAnnotation =
-        AnnotationSpec.builder(Generated.class)
-            .addMember("value", "$S", GeneratorProcessor.class.getName())
-            .build();
+	/**
+	 * Given a {@link TypeElement} representing a generator interface, generate its implementation
+	 *
+	 * @param information the information about the interface to be implemented contained in a {@link
+	 *     GeneratorInformation} object
+	 */
+	public ArbitraryGeneratorImplementation(GeneratorInformation information) {
+		super(information);
+		this.javaFile =
+			JavaFile
+				.builder(this.information.getGeneratorPackage(), createArbitraryGenerator())
+				.build();
+	}
 
-    List<MethodSpec> generatorMethods = new ArrayList<>();
+	private TypeSpec createArbitraryGenerator() {
+		AnnotationSpec generatedAnnotation = AnnotationSpec
+			.builder(Generated.class)
+			.addMember("value", "$S", GeneratorProcessor.class.getName())
+			.build();
 
-    MethodSpec generate =
-        this.information.getGeneratorType().getEnclosedElements().stream()
-            .filter(e -> e.getKind() == ElementKind.METHOD)
-            .filter(e -> e.getAnnotationMirrors().isEmpty())
-            .map(ExecutableElement.class::cast)
-            .map(this::createArbitraryGenerateMethod)
-            .map(ArbitraryGenerateMethod::getGeneratedMethod)
-            .findAny()
-            .orElseThrow();
+		List<MethodSpec> generatorMethods = new ArrayList<>();
 
-    generatorMethods.add(generate);
+		MethodSpec generate =
+			this.information.getGeneratorType()
+				.getEnclosedElements()
+				.stream()
+				.filter(e -> e.getKind() == ElementKind.METHOD)
+				.filter(e -> e.getAnnotationMirrors().isEmpty())
+				.map(ExecutableElement.class::cast)
+				.map(this::createArbitraryGenerateMethod)
+				.map(ArbitraryGenerateMethod::getGeneratedMethod)
+				.findAny()
+				.orElseThrow();
 
-    List<MethodSpec> constrictorMethods =
-        this.information.getGeneratorType().getEnclosedElements().stream()
-            .filter(e -> e.getKind() == ElementKind.METHOD)
-            .filter(e -> e.getAnnotationMirrors().size() == 1)
-            .map(ExecutableElement.class::cast)
-            .map(this::createArbitraryConstrictorMethod)
-            .map(ArbitraryConstrictorMethod::getGeneratedMethod)
-            .collect(Collectors.toList());
+		generatorMethods.add(generate);
 
-    generatorMethods.addAll(constrictorMethods);
+		List<MethodSpec> constrictorMethods =
+			this.information.getGeneratorType()
+				.getEnclosedElements()
+				.stream()
+				.filter(e -> e.getKind() == ElementKind.METHOD)
+				.filter(e -> e.getAnnotationMirrors().size() == 1)
+				.map(ExecutableElement.class::cast)
+				.map(this::createArbitraryConstrictorMethod)
+				.map(ArbitraryConstrictorMethod::getGeneratedMethod)
+				.collect(Collectors.toList());
 
-    generatorMethods.add(
-        new ArbitraryGenerateConstrainedMethod(
-                this.information.getReturnClassName(), constrictorMethods)
-            .getConstrainedMethod());
+		generatorMethods.addAll(constrictorMethods);
 
-    var typeBuilder =
-        TypeSpec.classBuilder(this.information.getImplementerName())
-            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-            .addSuperinterface(this.information.getClassName())
-            .addSuperinterface(
-                ParameterizedTypeName.get(
-                    ClassName.get(Generator.class), this.information.getReturnClassName()))
-            .addAnnotation(generatedAnnotation)
-            .addMethods(generatorMethods);
+		generatorMethods.add(
+			new ArbitraryGenerateConstrainedMethod(
+				this.information.getReturnClassName(),
+				constrictorMethods
+			)
+				.getConstrainedMethod()
+		);
 
-    return typeBuilder.build();
-  }
+		var typeBuilder = TypeSpec
+			.classBuilder(this.information.getImplementerName())
+			.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+			.addSuperinterface(this.information.getClassName())
+			.addSuperinterface(
+				ParameterizedTypeName.get(
+					ClassName.get(Generator.class),
+					this.information.getReturnClassName()
+				)
+			)
+			.addAnnotation(generatedAnnotation)
+			.addMethods(generatorMethods);
 
-  private ArbitraryGenerateMethod createArbitraryGenerateMethod(
-      ExecutableElement executableElement) {
-    return new ArbitraryGenerateMethod(this.information, executableElement);
-  }
+		return typeBuilder.build();
+	}
 
-  private ArbitraryConstrictorMethod createArbitraryConstrictorMethod(
-      ExecutableElement executableElement) {
-    var constrictorAnnotation =
-        executableElement.getAnnotationMirrors().get(0).getAnnotationType().asElement();
-    return new ArbitraryConstrictorMethod(
-        this.information, constrictorAnnotation, executableElement);
-  }
+	private ArbitraryGenerateMethod createArbitraryGenerateMethod(
+		ExecutableElement executableElement
+	) {
+		return new ArbitraryGenerateMethod(this.information, executableElement);
+	}
+
+	private ArbitraryConstrictorMethod createArbitraryConstrictorMethod(
+		ExecutableElement executableElement
+	) {
+		var constrictorAnnotation = executableElement
+			.getAnnotationMirrors()
+			.get(0)
+			.getAnnotationType()
+			.asElement();
+		return new ArbitraryConstrictorMethod(
+			this.information,
+			constrictorAnnotation,
+			executableElement
+		);
+	}
 }

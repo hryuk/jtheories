@@ -17,61 +17,60 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class SourceOfRandom {
 
-  // TODO: Check thread safety
+	// TODO: Check thread safety
 
-  // Used for seeding, since seeds cannot be normally extracted from Random.class
-  private static final Random SEEDER = new Random();
-  // Keep the count of times this has been reseeded
-  private static final AtomicLong counter = new AtomicLong();
-  // Class level Random and seed
-  private static Random parentRandom;
-  private static long parentSeed;
+	// Used for seeding, since seeds cannot be normally extracted from Random.class
+	private static final Random SEEDER = new Random();
+	// Keep the count of times this has been reseeded
+	private static final AtomicLong counter = new AtomicLong();
+	// Class level Random and seed
+	private static Random parentRandom;
+	private static long parentSeed;
 
-  static {
-    reseed();
-  }
+	static {
+		reseed();
+	}
 
-  // Instance level Random and seed, a copy of parent at the time of creation of the instance
-  private final Random random;
-  private final long seed;
+	// Instance level Random and seed, a copy of parent at the time of creation of the instance
+	private final Random random;
+	private final long seed;
 
-  public SourceOfRandom() {
-    this.random = parentRandom;
-    this.seed = parentSeed;
-  }
+	public SourceOfRandom() {
+		this.random = parentRandom;
+		this.seed = parentSeed;
+	}
 
-  public static void reseed() {
-    reseed(SEEDER.nextLong());
-  }
+	public static void reseed() {
+		reseed(SEEDER.nextLong());
+	}
 
-  public static void reseed(long seed) {
-    parentSeed = seed;
-    parentRandom = new Random(seed);
-    counter.incrementAndGet();
-  }
+	public static void reseed(long seed) {
+		parentSeed = seed;
+		parentRandom = new Random(seed);
+		counter.incrementAndGet();
+	}
 
-  public Random getRandom() {
-    return this.random;
-  }
+	public Random getRandom() {
+		return this.random;
+	}
 
-  public long getSeed() {
-    return this.seed;
-  }
+	public long getSeed() {
+		return this.seed;
+	}
 
-  /**
-   * Randomly pick one of the given elements
-   *
-   * @param elements the elements to pick from
-   * @param <T>      the type of the elements
-   * @return one of the given elements at random
-   */
-  @SafeVarargs
-  public final <T> T choice(T first, T... elements) {
-    @SuppressWarnings("unchecked")
-    var all = (T[]) new Object[elements.length + 1];
-    all[0] = first;
-    System.arraycopy(elements, 0, all, 1, elements.length);
-    return all[this.getRandom().nextInt(all.length)];
-  }
-
+	/**
+	 * Randomly pick one of the given elements
+	 *
+	 * @param elements the elements to pick from
+	 * @param <T>      the type of the elements
+	 * @return one of the given elements at random
+	 */
+	@SafeVarargs
+	public final <T> T choice(T first, T... elements) {
+		@SuppressWarnings("unchecked")
+		var all = (T[]) new Object[elements.length + 1];
+		all[0] = first;
+		System.arraycopy(elements, 0, all, 1, elements.length);
+		return all[this.getRandom().nextInt(all.length)];
+	}
 }
