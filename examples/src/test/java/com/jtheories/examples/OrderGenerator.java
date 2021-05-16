@@ -5,7 +5,7 @@ import java.util.Collection;
 
 @Generator
 public interface OrderGenerator {
-	default Order generate(final Collection<Product> items) {
+	default Order generate(Collection<Product> items) {
 		return new Order(items);
 	}
 }

@@ -18,13 +18,13 @@ public class GenericGeneratorImplementation extends GeneratorImplementation {
 	 * implementation
 	 *
 	 * @param information the information about the interface to be implemented contained in a {@link
-	 *     GeneratorInformation} object
+	 *                    GeneratorInformation} object
 	 */
 	public GenericGeneratorImplementation(GeneratorInformation information) {
 		super(information);
 		this.javaFile =
 			JavaFile
-				.builder(this.information.getGeneratorPackage(), createArbitraryGenerator())
+				.builder(this.information.getGeneratorPackage(), this.createArbitraryGenerator())
 				.build();
 	}
 
@@ -37,17 +37,17 @@ public class GenericGeneratorImplementation extends GeneratorImplementation {
 		List<MethodSpec> generatorMethods = new ArrayList<>();
 
 		generatorMethods.add(
-			new GenericGenerateConstrainedMethod(information).getConstrainedMethod()
+			new GenericGenerateMethod(this.information).getConstrainedMethod()
 		);
 
 		var typeBuilder = TypeSpec
-			.classBuilder(information.getImplementerName())
+			.classBuilder(this.information.getImplementerName())
 			.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-			.addSuperinterface(information.getClassName())
+			.addSuperinterface(this.information.getClassName())
 			.addSuperinterface(
 				ParameterizedTypeName.get(
 					ClassName.get(Generator.class),
-					information.getReturnClassName()
+					this.information.getReturnClassName()
 				)
 			)
 			.addAnnotation(generatedAnnotation)

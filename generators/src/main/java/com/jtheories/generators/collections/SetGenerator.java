@@ -12,10 +12,7 @@ public interface SetGenerator<T> {
 		var collectionGenerator = Generators.getGenerator(Collection.class);
 
 		@SuppressWarnings("unchecked")
-		Collection<T> generatedCollection = collectionGenerator.generateConstrained(
-			type,
-			types
-		);
+		Collection<T> generatedCollection = collectionGenerator.generate(type, types);
 
 		return new HashSet<>(generatedCollection);
 	}

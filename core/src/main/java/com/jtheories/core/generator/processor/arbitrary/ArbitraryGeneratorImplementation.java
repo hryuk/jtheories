@@ -20,13 +20,13 @@ public class ArbitraryGeneratorImplementation extends GeneratorImplementation {
 	 * Given a {@link TypeElement} representing a generator interface, generate its implementation
 	 *
 	 * @param information the information about the interface to be implemented contained in a {@link
-	 *     GeneratorInformation} object
+	 *                    GeneratorInformation} object
 	 */
 	public ArbitraryGeneratorImplementation(GeneratorInformation information) {
 		super(information);
 		this.javaFile =
 			JavaFile
-				.builder(this.information.getGeneratorPackage(), createArbitraryGenerator())
+				.builder(this.information.getGeneratorPackage(), this.createArbitraryGenerator())
 				.build();
 	}
 
@@ -45,8 +45,8 @@ public class ArbitraryGeneratorImplementation extends GeneratorImplementation {
 				.filter(e -> e.getKind() == ElementKind.METHOD)
 				.filter(e -> e.getAnnotationMirrors().isEmpty())
 				.map(ExecutableElement.class::cast)
-				.map(this::createArbitraryGenerateMethod)
-				.map(ArbitraryGenerateMethod::getGeneratedMethod)
+				.map(this::createArbitraryGenerateBasicMethod)
+				.map(ArbitraryGenerateBasicMethod::getGenerateBasicMethod)
 				.findAny()
 				.orElseThrow();
 
@@ -66,11 +66,8 @@ public class ArbitraryGeneratorImplementation extends GeneratorImplementation {
 		generatorMethods.addAll(constrictorMethods);
 
 		generatorMethods.add(
-			new ArbitraryGenerateConstrainedMethod(
-				this.information.getReturnClassName(),
-				constrictorMethods
-			)
-				.getConstrainedMethod()
+			new ArbitraryGenerateMethod(this.information.getReturnClassName())
+				.getGenerateMethod()
 		);
 
 		var typeBuilder = TypeSpec
@@ -89,10 +86,10 @@ public class ArbitraryGeneratorImplementation extends GeneratorImplementation {
 		return typeBuilder.build();
 	}
 
-	private ArbitraryGenerateMethod createArbitraryGenerateMethod(
+	private ArbitraryGenerateBasicMethod createArbitraryGenerateBasicMethod(
 		ExecutableElement executableElement
 	) {
-		return new ArbitraryGenerateMethod(this.information, executableElement);
+		return new ArbitraryGenerateBasicMethod(this.information, executableElement);
 	}
 
 	private ArbitraryConstrictorMethod createArbitraryConstrictorMethod(
