@@ -1,14 +1,25 @@
 name: Testing and validation
 
 on:
-  workflow_run:
-    workflows: ["Code Style"]
-    types:
-      - completed
+  pull_request:
+    branches:
+      - develop
 
 jobs:
-  test:
+  check-style:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-out
+        uses: actions/checkout@v2
+      - name: Set up JDK ${{ matrix.jdk }}
+        uses: actions/setup-java@v1
+        with:
+          java-version: 16
+      - name: Check code style
+        run: mvn prettier:check
 
+  test:
+    needs: check-style
     runs-on: ubuntu-latest
     strategy:
       matrix:
