@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class ProductTest {
 
 	@RepeatedTest(100)
-	void productHasPriceAndName(Product product) {
+	void productHasPriceAndName(final Product product) {
 		Assertions.assertEquals(product.getId(), UUID.fromString(product.getId().toString()));
 		Assertions.assertTrue(product.getPrice() > 0);
 		Assertions.assertNotNull(product.getName());
@@ -20,27 +20,27 @@ class ProductTest {
 	}
 
 	@RepeatedTest(200)
-	void freeProductsCostNothing(@Free Product product) {
+	void freeProductsCostNothing(@Free final Product product) {
 		Assertions.assertEquals(0L, product.getPrice());
 	}
 
 	@RepeatedTest(200)
-	void productsHavePriceAndName(Collection<Product> products) {
+	void productsHavePriceAndName(final Collection<Product> products) {
 		products.forEach(
-				product -> {
-					Assertions.assertEquals(
-							product.getId(),
-							UUID.fromString(product.getId().toString())
-					);
-					Assertions.assertTrue(product.getPrice() > 0);
-					Assertions.assertNotNull(product.getName());
-					Assertions.assertNotEquals(0, product.getPrice() % 10);
-				}
+			product -> {
+				Assertions.assertEquals(
+					product.getId(),
+					UUID.fromString(product.getId().toString())
+				);
+				Assertions.assertTrue(product.getPrice() > 0);
+				Assertions.assertNotNull(product.getName());
+				Assertions.assertNotEquals(0, product.getPrice() % 10);
+			}
 		);
 	}
 
 	@RepeatedTest(200)
-	void productListIsFree(List<@Free Product> products) {
+	void productListIsFree(final List<@Free Product> products) {
 		products.forEach(product -> Assertions.assertEquals(0L, product.getPrice()));
 	}
 }

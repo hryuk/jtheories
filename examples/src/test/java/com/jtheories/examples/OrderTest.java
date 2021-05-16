@@ -10,12 +10,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class OrderTest {
 
 	@RepeatedTest(200)
-	void orderPriceIsAccurate(Order order) {
-		Long expectedTotal = order
-				.getItems()
-				.stream()
-				.map(Product::getPrice)
-				.reduce(0L, Long::sum);
+	void orderPriceIsAccurate(final Order order) {
+		final Long expectedTotal = order
+			.getItems()
+			.stream()
+			.map(Product::getPrice)
+			.reduce(0L, Long::sum);
 		assertEquals(expectedTotal, order.getTotalPrice());
 	}
 }

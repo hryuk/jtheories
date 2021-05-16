@@ -8,8 +8,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(JTheoriesExtension.class)
 class VeryRealClassTest {
 
-  @RepeatedTest(200)
-  void doSomethingTest(VeryRealClass veryRealClass) {
-    Assertions.assertNotNull(veryRealClass);
-  }
+	@RepeatedTest(200)
+	void doSomethingTest(VeryRealClass veryRealClass) {
+		Assertions.assertNotNull(veryRealClass);
+	}
 }
