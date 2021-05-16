@@ -1,9 +1,10 @@
 name: Testing and validation
 
 on:
-  pull_request:
-    branches:
-      - develop
+  workflow_run:
+    workflows: ["Code Style"]
+    types:
+      - completed
 
 jobs:
   test:

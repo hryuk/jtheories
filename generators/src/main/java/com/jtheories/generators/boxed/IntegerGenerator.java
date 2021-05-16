@@ -5,8 +5,7 @@ import com.jtheories.core.random.SourceOfRandom;
 
 @Generator
 public interface IntegerGenerator {
-
-  default Integer generate(SourceOfRandom random) {
-    return random.getRandom().nextInt();
-  }
+	default Integer generate(SourceOfRandom random) {
+		return random.getRandom().nextInt();
+	}
 }

@@ -5,8 +5,7 @@ import com.jtheories.core.random.SourceOfRandom;
 
 @Generator
 public interface VoidGenerator {
-
-  default Void generate(SourceOfRandom random) {
-    return null;
-  }
+	default Void generate(SourceOfRandom random) {
+		return null;
+	}
 }

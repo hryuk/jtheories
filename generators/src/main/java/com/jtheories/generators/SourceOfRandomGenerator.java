@@ -5,9 +5,7 @@ import com.jtheories.core.random.SourceOfRandom;
 
 @Generator
 public interface SourceOfRandomGenerator {
-
-  default SourceOfRandom generate() {
-    return new SourceOfRandom();
-  }
-
+	default SourceOfRandom generate() {
+		return new SourceOfRandom();
+	}
 }
