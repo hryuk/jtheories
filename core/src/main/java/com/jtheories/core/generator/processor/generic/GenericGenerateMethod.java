@@ -5,17 +5,17 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import javax.lang.model.element.Modifier;
 
-public class GenericGenerateConstrainedMethod {
+public class GenericGenerateMethod {
 
 	private final MethodSpec constrainedMethod;
 	private final GeneratorInformation information;
 
-	public GenericGenerateConstrainedMethod(GeneratorInformation information) {
+	public GenericGenerateMethod(GeneratorInformation information) {
 		this.information = information;
 
 		this.constrainedMethod =
 			MethodSpec
-				.methodBuilder("generateConstrained")
+				.methodBuilder("generate")
 				.addModifiers(Modifier.PUBLIC)
 				.addParameter(Class.class, "type")
 				.addParameter(Class[].class, "annotations")
@@ -29,10 +29,10 @@ public class GenericGenerateConstrainedMethod {
 	}
 
 	public ClassName getReturnType() {
-		return information.getReturnClassName();
+		return this.information.getReturnClassName();
 	}
 
 	public MethodSpec getConstrainedMethod() {
-		return constrainedMethod;
+		return this.constrainedMethod;
 	}
 }

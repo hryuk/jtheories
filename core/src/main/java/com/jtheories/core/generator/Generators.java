@@ -13,7 +13,7 @@ public class Generators {
 	/**
 	 * Expected name of the generator method
 	 */
-	public static final String GENERATE = "generateConstrained";
+	public static final String GENERATE = "generate";
 
 	private static final ConcurrentMap<Class<?>, Generator<?>> cache = new ConcurrentHashMap<>();
 
@@ -65,6 +65,6 @@ public class Generators {
 
 	public static <T> T gen(final Class<T> generatedType, final Class<?>... annotations) {
 		final Generator<T> generator = getGenerator(generatedType);
-		return generator.generateConstrained(generatedType, annotations);
+		return generator.generate(generatedType, annotations);
 	}
 }
