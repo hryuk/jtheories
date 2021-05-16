@@ -42,9 +42,7 @@ class ProductTest {
 	@RepeatedTest(200)
 	void productListIsFree(List<@Free Product> products) {
 		products.forEach(
-				product -> {
-					Assertions.assertEquals(0L, product.getPrice());
-				}
+				product -> Assertions.assertEquals(0L, product.getPrice())
 		);
 	}
 }
