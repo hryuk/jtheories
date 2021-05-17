@@ -36,9 +36,7 @@ public class GenericGeneratorImplementation extends GeneratorImplementation {
 
 		List<MethodSpec> generatorMethods = new ArrayList<>();
 
-		generatorMethods.add(
-			new GenericGenerateMethod(this.information).getConstrainedMethod()
-		);
+		generatorMethods.add(new GenericGenerateMethod(this.information).getGenerateMethod());
 
 		var typeBuilder = TypeSpec
 			.classBuilder(this.information.getImplementerName())

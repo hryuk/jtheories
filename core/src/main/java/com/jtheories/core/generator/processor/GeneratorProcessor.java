@@ -11,6 +11,7 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 
@@ -21,6 +22,7 @@ public class GeneratorProcessor extends AbstractProcessor {
 
 	private Messager messager = null;
 	private Types typeUtils;
+	private Elements elementUtils;
 	private JavaWritter javaWritter;
 
 	@Override
@@ -28,6 +30,7 @@ public class GeneratorProcessor extends AbstractProcessor {
 		super.init(processingEnv);
 		this.messager = processingEnv.getMessager();
 		this.typeUtils = processingEnv.getTypeUtils();
+		this.elementUtils = processingEnv.getElementUtils();
 		this.javaWritter = new JavaWritter(processingEnv.getFiler());
 	}
 
@@ -43,7 +46,10 @@ public class GeneratorProcessor extends AbstractProcessor {
 				.flatMap(Collection::stream)
 				.filter(this::checkAndReportIllegalUsages)
 				.map(TypeElement.class::cast)
-				.map(typeElement -> new GeneratorInformation(typeUtils, typeElement))
+				.map(
+					typeElement ->
+						new GeneratorInformation(this.typeUtils, this.elementUtils, typeElement)
+				)
 				.map(
 					info ->
 						info.isParameterized()
@@ -52,7 +58,7 @@ public class GeneratorProcessor extends AbstractProcessor {
 				)
 				.forEach(this.javaWritter::writeFile);
 		} catch (GeneratorProcessorException e) {
-			fatal(e.getMessage());
+			this.fatal(e.getMessage());
 		}
 
 		return true;
@@ -67,10 +73,10 @@ public class GeneratorProcessor extends AbstractProcessor {
 	 */
 	private boolean checkAndReportIllegalUsages(Element element) {
 		if (element.getKind() != ElementKind.INTERFACE) {
-			fatal(
-				"Illegal use of @Generator on non-interface element %s",
-				element.getSimpleName()
-			);
+			this.fatal(
+					"Illegal use of @Generator on non-interface element %s",
+					element.getSimpleName()
+				);
 			return false;
 		}
 

@@ -5,6 +5,8 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -30,7 +32,7 @@ public class Generators {
 			for (final ClassInfo arbitraryGenerator : arbitraryGenerators) {
 				final var generateMethod = arbitraryGenerator
 					.loadClass()
-					.getDeclaredMethod(Generators.GENERATE, Class.class, Class[].class);
+					.getDeclaredMethod(Generators.GENERATE, List.class);
 				if (generateMethod.getReturnType().equals(generatedType)) {
 					//noinspection unchecked
 					return (Generator<T>) arbitraryGenerator
@@ -65,6 +67,8 @@ public class Generators {
 
 	public static <T> T gen(final Class<T> generatedType, final Class<?>... annotations) {
 		final Generator<T> generator = getGenerator(generatedType);
-		return generator.generate(generatedType, annotations);
+		return generator.generate(
+			Arrays.asList(new TypeArgument(generatedType, annotations))
+		);
 	}
 }

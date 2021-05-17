@@ -1,6 +1,7 @@
 package com.jtheories.junit;
 
 import com.jtheories.core.generator.Generators;
+import com.jtheories.core.generator.TypeArgument;
 import com.jtheories.core.generator.exceptions.GenerationRuntimeException;
 import com.jtheories.core.generator.exceptions.GeneratorInstantiationException;
 import com.jtheories.core.generator.exceptions.IllegalGeneratorMethodAccessException;
@@ -32,14 +33,12 @@ public class JTheoriesExtension implements ParameterResolver {
 				"com.jtheories.core.generator.Generator"
 			);
 			for (ClassInfo annotatedClass : generatorClasses) {
-				generators.add(annotatedClass.loadClass().getConstructor().newInstance());
+				this.generators.add(annotatedClass.loadClass().getConstructor().newInstance());
 
 				Method generateMethod;
 				generateMethod =
-					annotatedClass
-						.loadClass()
-						.getDeclaredMethod(Generators.GENERATE, Class.class, Class[].class);
-				availableGenerators.add(generateMethod.getReturnType());
+					annotatedClass.loadClass().getDeclaredMethod(Generators.GENERATE, List.class);
+				this.availableGenerators.add(generateMethod.getReturnType());
 			}
 		} catch (
 			NoSuchMethodException
@@ -59,8 +58,7 @@ public class JTheoriesExtension implements ParameterResolver {
 		ParameterContext parameterContext,
 		ExtensionContext extensionContext
 	) throws ParameterResolutionException {
-		return availableGenerators
-			.stream()
+		return this.availableGenerators.stream()
 			.anyMatch(
 				generatorType -> parameterContext.getParameter().getType().equals(generatorType)
 			);
@@ -71,30 +69,28 @@ public class JTheoriesExtension implements ParameterResolver {
 		ParameterContext parameterContext,
 		ExtensionContext extensionContext
 	) throws ParameterResolutionException {
-		Object generator = generators
-			.stream()
-			.filter(
-				gen -> {
-					try {
-						return gen
-							.getClass()
-							.getDeclaredMethod(Generators.GENERATE, Class.class, Class[].class)
-							.getReturnType()
-							.equals(parameterContext.getParameter().getType());
-					} catch (NoSuchMethodException e) {
-						return false;
+		Object generator =
+			this.generators.stream()
+				.filter(
+					gen -> {
+						try {
+							return gen
+								.getClass()
+								.getDeclaredMethod(Generators.GENERATE, List.class)
+								.getReturnType()
+								.equals(parameterContext.getParameter().getType());
+						} catch (NoSuchMethodException e) {
+							return false;
+						}
 					}
-				}
-			)
-			.findAny()
-			.orElseThrow();
+				)
+				.findAny()
+				.orElseThrow();
 
 		Method generateMethod;
 		try {
 			generateMethod =
-				generator
-					.getClass()
-					.getDeclaredMethod(Generators.GENERATE, Class.class, Class[].class);
+				generator.getClass().getDeclaredMethod(Generators.GENERATE, List.class);
 		} catch (NoSuchMethodException e) {
 			throw new MissingGeneratorMethodException(
 				String.format(
@@ -122,13 +118,19 @@ public class JTheoriesExtension implements ParameterResolver {
 					)
 					.map(Annotation::annotationType)
 					.toArray(Class<?>[]::new);
-				return generateMethod.invoke(generator, generatorType, annotations);
+				return generateMethod.invoke(
+					generator,
+					Arrays.asList(new TypeArgument(generatorType, annotations))
+				);
 			} else {
 				Class<?>[] annotations = Arrays
 					.stream(parameterContext.getParameter().getAnnotations())
 					.map(Annotation::annotationType)
 					.toArray(Class[]::new);
-				return generateMethod.invoke(generator, null, annotations);
+				return generateMethod.invoke(
+					generator,
+					Arrays.asList(new TypeArgument(null, annotations))
+				);
 			}
 		} catch (IllegalAccessException e) {
 			throw new IllegalGeneratorMethodAccessException(

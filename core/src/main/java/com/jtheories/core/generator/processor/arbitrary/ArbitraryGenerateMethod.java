@@ -1,9 +1,12 @@
 package com.jtheories.core.generator.processor.arbitrary;
 
+import com.jtheories.core.generator.Generator;
 import com.jtheories.core.generator.Generators;
+import com.jtheories.core.generator.TypeArgument;
 import com.jtheories.core.generator.processor.GenerateMethod;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -26,9 +29,16 @@ public class ArbitraryGenerateMethod {
 			MethodSpec
 				.methodBuilder("generate")
 				.addModifiers(Modifier.PUBLIC)
-				.addParameter(Class.class, "type")
-				.addParameter(Class[].class, "annotations")
-				.varargs(true)
+				.addParameter(
+					ParameterizedTypeName.get(List.class, TypeArgument.class),
+					"typeArguments"
+				)
+				.beginControlFlow("if(typeArguments.size()!=1)")
+				.addStatement(
+					"throw new AssertionError(\"Arbitrary generator called with more than one typeArgument\")"
+				)
+				.endControlFlow()
+				.addStatement("Class[] annotations = typeArguments.get(0).getAnnotations()")
 				.addStatement(
 					"$T constrained$N = generateBasic()",
 					returnType,
@@ -76,7 +86,7 @@ public class ArbitraryGenerateMethod {
 					"constrained$N = ($T) Arrays.stream(this.getClass().getDeclaredMethods())\n" +
 					"             .filter(m -> m.getName().equals(constrictorName))\n" +
 					"             .findFirst()\n" +
-					"             .orElseThrow()\n" +
+					"             .orElseThrow(() -> new RuntimeException(this.getClass().getSimpleName()+\":\"+constrictorName))\n" +
 					"             .invoke(this,\n" +
 					"                 Arrays.stream(methodParameters.get(constrictorName))\n" +
 					"                     .map(p -> p.getClass().equals($T.class)? finalConstrained$N :p)\n" +

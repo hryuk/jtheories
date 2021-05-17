@@ -3,9 +3,11 @@ package com.jtheories.core.generator.processor;
 import com.squareup.javapoet.ClassName;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
 public class GeneratorInformation {
@@ -14,29 +16,44 @@ public class GeneratorInformation {
 	private static final String GENERICS_TEMPLATE = "Generic%sGenerator";
 
 	private final Types typeUtils;
+	private final Elements elementUtils;
 	private final TypeElement generatorType;
 	private final ClassName className;
 	private final TypeElement returnType;
 	private final ClassName returnClassName;
 	private final String generatorPackage;
 	private final String implementerName;
+	private final ExecutableElement defaultGenerateMethod;
 
-	public GeneratorInformation(Types typeUtils, TypeElement generatorType) {
+	public GeneratorInformation(
+		Types typeUtils,
+		Elements elementUtils,
+		TypeElement generatorType
+	) {
 		this.typeUtils = typeUtils;
+		this.elementUtils = elementUtils;
 		this.generatorType = generatorType;
-		this.returnType = getGeneratorReturnTypeElement(generatorType);
-		this.returnClassName = ClassName.get(returnType);
+		this.returnType = this.getGeneratorReturnTypeElement(generatorType);
+		this.returnClassName = ClassName.get(this.returnType);
 		this.className = ClassName.get(generatorType);
 		this.generatorPackage = this.className.packageName();
 		this.implementerName =
 			String.format(
-				isParameterized() ? GENERICS_TEMPLATE : ARBITRARY_TEMPLATE,
+				this.isParameterized() ? GENERICS_TEMPLATE : ARBITRARY_TEMPLATE,
 				this.returnClassName.simpleName()
 			);
+		this.defaultGenerateMethod =
+			this.generatorType.getEnclosedElements()
+				.stream()
+				.filter(e -> e.getKind() == ElementKind.METHOD)
+				.filter(e -> e.getAnnotationMirrors().isEmpty())
+				.map(ExecutableElement.class::cast)
+				.findFirst()
+				.orElseThrow();
 	}
 
 	public ClassName getReturnClassName() {
-		return returnClassName;
+		return this.returnClassName;
 	}
 
 	/**
@@ -65,24 +82,28 @@ public class GeneratorInformation {
 			.orElseThrow();
 	}
 
+	public ExecutableElement getDefaultGenerateMethod() {
+		return this.defaultGenerateMethod;
+	}
+
 	public String getImplementerName() {
-		return implementerName;
+		return this.implementerName;
 	}
 
 	public String getGeneratorPackage() {
-		return generatorPackage;
+		return this.generatorPackage;
 	}
 
 	public ClassName getClassName() {
-		return className;
+		return this.className;
 	}
 
 	public TypeElement getGeneratorType() {
-		return generatorType;
+		return this.generatorType;
 	}
 
 	public TypeElement getReturnType() {
-		return returnType;
+		return this.returnType;
 	}
 
 	public boolean isParameterized() {
@@ -94,6 +115,10 @@ public class GeneratorInformation {
 	}
 
 	public Types getTypeUtils() {
-		return typeUtils;
+		return this.typeUtils;
+	}
+
+	public Elements getElementUtils() {
+		return this.elementUtils;
 	}
 }
