@@ -6,7 +6,13 @@ import com.jtheories.core.generator.processor.arbitrary.ArbitraryGeneratorImplem
 import com.jtheories.core.generator.processor.generic.GenericGeneratorImplementation;
 import java.util.Collection;
 import java.util.Set;
-import javax.annotation.processing.*;
+import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.Messager;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.Processor;
+import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedAnnotationTypes;
+import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -46,22 +52,20 @@ public class GeneratorProcessor extends AbstractProcessor {
 				.flatMap(Collection::stream)
 				.filter(this::checkAndReportIllegalUsages)
 				.map(TypeElement.class::cast)
-				.map(
-					typeElement ->
-						new GeneratorInformation(this.typeUtils, this.elementUtils, typeElement)
-				)
-				.map(
-					info ->
-						info.isParameterized()
-							? new GenericGeneratorImplementation(info)
-							: new ArbitraryGeneratorImplementation(info)
-				)
+				.map(this::getGeneratorImplementation)
 				.forEach(this.javaWritter::writeFile);
 		} catch (GeneratorProcessorException e) {
 			this.fatal(e.getMessage());
 		}
 
 		return true;
+	}
+
+	private GeneratorImplementation getGeneratorImplementation(TypeElement typeElement) {
+		var info = new GeneratorInformation(this.typeUtils, this.elementUtils, typeElement);
+		return info.isParameterized()
+			? new GenericGeneratorImplementation(info)
+			: new ArbitraryGeneratorImplementation(info);
 	}
 
 	/**

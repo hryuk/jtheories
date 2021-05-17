@@ -3,11 +3,15 @@ package com.jtheories.core.generator.processor.generic;
 import com.jtheories.core.generator.Generator;
 import com.jtheories.core.generator.processor.GeneratorImplementation;
 import com.jtheories.core.generator.processor.GeneratorInformation;
-import com.jtheories.core.generator.processor.GeneratorProcessor;
-import com.squareup.javapoet.*;
+import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.TypeVariableName;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.processing.Generated;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 
@@ -22,17 +26,18 @@ public class GenericGeneratorImplementation extends GeneratorImplementation {
 	 */
 	public GenericGeneratorImplementation(GeneratorInformation information) {
 		super(information);
-		this.javaFile =
-			JavaFile
-				.builder(this.information.getGeneratorPackage(), this.createArbitraryGenerator())
-				.build();
 	}
 
-	private TypeSpec createArbitraryGenerator() {
-		AnnotationSpec generatedAnnotation = AnnotationSpec
-			.builder(Generated.class)
-			.addMember("value", "$S", GeneratorProcessor.class.getName())
+	@Override
+	public JavaFile getJavaFile() {
+		return JavaFile
+			.builder(this.information.getGeneratorPackage(), this.implementGenerator())
 			.build();
+	}
+
+	@Override
+	protected TypeSpec implementGenerator() {
+		AnnotationSpec generatedAnnotation = this.getGeneratedAnnotation();
 
 		List<MethodSpec> generatorMethods = new ArrayList<>();
 

@@ -5,6 +5,7 @@ import com.jtheories.core.generator.processor.GeneratorImplementation;
 import com.jtheories.core.generator.processor.GeneratorInformation;
 import com.jtheories.core.generator.processor.GeneratorProcessor;
 import com.squareup.javapoet.*;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,17 +25,11 @@ public class ArbitraryGeneratorImplementation extends GeneratorImplementation {
 	 */
 	public ArbitraryGeneratorImplementation(GeneratorInformation information) {
 		super(information);
-		this.javaFile =
-			JavaFile
-				.builder(this.information.getGeneratorPackage(), this.createArbitraryGenerator())
-				.build();
 	}
 
-	private TypeSpec createArbitraryGenerator() {
-		AnnotationSpec generatedAnnotation = AnnotationSpec
-			.builder(Generated.class)
-			.addMember("value", "$S", GeneratorProcessor.class.getName())
-			.build();
+	@Override
+	protected TypeSpec implementGenerator() {
+		AnnotationSpec generatedAnnotation = this.getGeneratedAnnotation();
 
 		List<MethodSpec> generatorMethods = new ArrayList<>();
 

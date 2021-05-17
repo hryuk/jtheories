@@ -1,12 +1,15 @@
 package com.jtheories.core.generator;
 
 import com.jtheories.core.generator.exceptions.GeneratorInstantiationException;
+import com.jtheories.core.generator.exceptions.NoSuchGeneratorException;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
+import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -23,37 +26,19 @@ public class Generators {
 		throw new AssertionError("This class cannot be instanced");
 	}
 
-	private static <T> Generator<T> createGenerator(final Class<T> generatedType) {
-		try (final var scanResult = new ClassGraph().enableClassInfo().scan()) {
-			final ClassInfoList arbitraryGenerators = scanResult.getClassesImplementing(
-				"com.jtheories.core.generator.Generator"
-			);
-
-			for (final ClassInfo arbitraryGenerator : arbitraryGenerators) {
-				final var generateMethod = arbitraryGenerator
-					.loadClass()
-					.getDeclaredMethod(Generators.GENERATE, List.class);
-				if (generateMethod.getReturnType().equals(generatedType)) {
-					//noinspection unchecked
-					return (Generator<T>) arbitraryGenerator
-						.loadClass()
-						.getConstructor()
-						.newInstance();
-				}
-			}
-
-			throw new GeneratorInstantiationException(
-				String.format("Could not find generator for %s", generatedType.getName())
-			);
-		} catch (
-			final NoSuchMethodException
-			| IllegalAccessException
-			| InstantiationException
-			| InvocationTargetException e
-		) {
-			throw new GeneratorInstantiationException(
-				String.format("Could not instantiate generator <%s>", e.getClass().getName())
-			);
+	/**
+	 * Return true if there's a generator available for the given type
+	 *
+	 * @param generatedType the {@link Class} of the type to check
+	 * @param <T>           the type to check
+	 * @return true if a generator can be obtained for the given type, false otherwise
+	 */
+	public static <T> boolean hasGenerator(final Class<T> generatedType) {
+		try {
+			getGenerator(generatedType);
+			return true;
+		} catch (NoSuchGeneratorException e) {
+			return false;
 		}
 	}
 
@@ -68,7 +53,66 @@ public class Generators {
 	public static <T> T gen(final Class<T> generatedType, final Class<?>... annotations) {
 		final Generator<T> generator = getGenerator(generatedType);
 		return generator.generate(
-			Arrays.asList(new TypeArgument(generatedType, annotations))
+			Collections.singletonList(new TypeArgument(generatedType, annotations))
 		);
+	}
+
+	private static <T> Generator<T> createGenerator(final Class<T> generatedType) {
+		Optional<Method> generatorMethod = getGeneratorMethod(generatedType);
+		return generatorMethod
+			.map(Generators::<T>instantiateGenerator)
+			.orElseThrow(
+				() ->
+					new NoSuchGeneratorException(
+						String.format("Could not find generator for %s", generatedType.getName())
+					)
+			);
+	}
+
+	private static <T> Optional<Method> getGeneratorMethod(Class<T> generatedType) {
+		Optional<Method> generatorMethod;
+		try (final var scanResult = new ClassGraph().enableClassInfo().scan()) {
+			final ClassInfoList generatorImplementations = scanResult.getClassesImplementing(
+				"com.jtheories.core.generator.Generator"
+			);
+
+			generatorMethod =
+				generatorImplementations
+					.stream()
+					.map(Generators::getGenerateMethod)
+					.filter(method -> method.getReturnType().equals(generatedType))
+					// TODO: We should be careful with this... what if there's more than one?
+					//  Throw an exception? Define criteria for picking?
+					.findAny();
+		}
+		return generatorMethod;
+	}
+
+	private static <T> Generator<T> instantiateGenerator(Method method) {
+		try {
+			//noinspection unchecked
+			return (Generator<T>) method.getDeclaringClass().getConstructor().newInstance();
+		} catch (
+			InstantiationException
+			| IllegalAccessException
+			| InvocationTargetException
+			| NoSuchMethodException e
+		) {
+			throw new GeneratorInstantiationException(
+				String.format("Could not instantiate generator <%s>", e.getClass().getName())
+			);
+		}
+	}
+
+	private static Method getGenerateMethod(ClassInfo implementation) {
+		try {
+			return implementation
+				.loadClass()
+				.getDeclaredMethod(Generators.GENERATE, List.class);
+		} catch (NoSuchMethodException e) {
+			throw new GeneratorInstantiationException(
+				String.format("Could not instantiate generator <%s>", e.getClass().getName())
+			);
+		}
 	}
 }
