@@ -4,6 +4,7 @@ import com.jtheories.core.generator.Generators;
 import com.jtheories.core.generator.processor.GenerateMethod;
 import com.jtheories.core.generator.processor.GeneratorInformation;
 import com.squareup.javapoet.*;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
@@ -103,11 +104,12 @@ public class ArbitraryGenerateBasicMethod {
 
 		if (!typeArguments.isEmpty()) {
 			return CodeBlock.of(
-				"$T generated_$N = $T.getGenerator($T.class).generate($T.class)",
+				"$T generated_$N = $T.getGenerator($T.class).generate($T.asList(new TypeArgument($T.class,new Class[]{})))",
 				parameterType,
 				parameterSpec,
 				Generators.class,
 				this.information.getTypeUtils().erasure(parameter.asType()),
+				Arrays.class,
 				typeArguments.get(0)
 			);
 		} else {

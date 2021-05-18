@@ -1,6 +1,5 @@
 package com.jtheories.generators.collections;
 
-import com.jtheories.core.generator.Generators;
 import com.jtheories.core.generator.processor.Generator;
 import com.jtheories.core.random.SourceOfRandom;
 import java.beans.beancontext.BeanContextServicesSupport;
@@ -25,9 +24,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Generator
-public interface CollectionGenerator<T> {
-	default Collection<T> generate(Class<T> type, Class<T>... annotations) {
-		SourceOfRandom random = Generators.getGenerator(SourceOfRandom.class).generateBasic();
+public interface CollectionGenerator {
+	default <T> Collection<T> generate(SourceOfRandom random, Supplier<T> genericSupplier) {
 		Supplier<Collection<T>> c = random.choice(
 			ArrayDeque::new,
 			ArrayList::new,
@@ -48,7 +46,7 @@ public interface CollectionGenerator<T> {
 		);
 		return IntStream
 			.range(0, random.getRandom().nextInt(99) + 1)
-			.mapToObj(operand -> Generators.gen(type, annotations))
+			.mapToObj(operand -> genericSupplier.get())
 			.collect(Collectors.toCollection(c));
 	}
 }
