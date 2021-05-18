@@ -8,8 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 
@@ -24,10 +24,10 @@ public class GenericGenerateMethod {
 		var codeBlockBuilder = CodeBlock.builder();
 
 		// Add assignment for each parameter
-		this.information.getDefaultGenerateMethod()
-			.getParameters()
-			.stream()
-			.map(this::generateAssignment)
+		var methodParams = this.information.getDefaultGenerateMethod().getParameters();
+		IntStream
+			.range(0, methodParams.size())
+			.mapToObj(i -> this.generateAssignment(i, methodParams.get(i)))
 			.forEach(codeBlockBuilder::addStatement);
 
 		var paramNames =
@@ -63,7 +63,7 @@ public class GenericGenerateMethod {
 		return this.generateMethod;
 	}
 
-	private CodeBlock generateAssignment(VariableElement parameter) {
+	private CodeBlock generateAssignment(int index, VariableElement parameter) {
 		TypeMirror supplierType =
 			this.information.getTypeUtils()
 				.erasure(

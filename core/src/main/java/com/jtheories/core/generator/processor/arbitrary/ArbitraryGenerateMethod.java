@@ -1,6 +1,5 @@
 package com.jtheories.core.generator.processor.arbitrary;
 
-import com.jtheories.core.generator.Generator;
 import com.jtheories.core.generator.Generators;
 import com.jtheories.core.generator.TypeArgument;
 import com.jtheories.core.generator.processor.GenerateMethod;

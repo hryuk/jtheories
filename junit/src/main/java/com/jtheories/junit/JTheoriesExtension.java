@@ -6,8 +6,8 @@ import com.jtheories.core.generator.TypeArgument;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -43,31 +43,38 @@ public class JTheoriesExtension implements ParameterResolver {
 		ParameterContext parameterContext,
 		java.lang.reflect.Type parameterType
 	) {
-		List<TypeArgument> typeArguments;
-		if (parameterType instanceof ParameterizedType) {
-			var generatorType = (Class<?>) (
-				(ParameterizedType) parameterType
-			).getActualTypeArguments()[0];
+		final List<TypeArgument> typeArguments = new ArrayList<>();
 
-			var annotations = Arrays
-				.stream(
-					(
-						(AnnotatedParameterizedType) parameterContext
-							.getParameter()
-							.getAnnotatedType()
-					).getAnnotatedActualTypeArguments()[0].getAnnotations()
-				)
-				.map(Annotation::annotationType)
-				.toArray(Class<?>[]::new);
-			typeArguments =
-				Collections.singletonList(new TypeArgument(generatorType, annotations));
+		if (parameterType instanceof ParameterizedType) {
+			Arrays
+				.stream(((ParameterizedType) parameterType).getActualTypeArguments())
+				.forEach(
+					argumentType -> {
+						if (parameterType instanceof AnnotatedParameterizedType) {
+							typeArguments.add(
+								new TypeArgument(
+									(Class<?>) ((AnnotatedParameterizedType) argumentType).getType(),
+									Arrays
+										.stream(((AnnotatedParameterizedType) argumentType).getAnnotations())
+										.map(Annotation::annotationType)
+										.toArray(Class<?>[]::new)
+								)
+							);
+						} else {
+							typeArguments.add(
+								new TypeArgument((Class<?>) argumentType, new Class[] {})
+							);
+						}
+					}
+				);
 		} else {
 			Class<?>[] annotations = Arrays
 				.stream(parameterContext.getParameter().getAnnotations())
 				.map(Annotation::annotationType)
 				.toArray(Class[]::new);
-			typeArguments = Collections.singletonList(new TypeArgument(null, annotations));
+			typeArguments.add(new TypeArgument(null, annotations));
 		}
+
 		return typeArguments;
 	}
 }
