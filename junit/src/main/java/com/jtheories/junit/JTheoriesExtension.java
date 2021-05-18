@@ -5,6 +5,7 @@ import com.jtheories.core.generator.Generators;
 import com.jtheories.core.generator.TypeArgument;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,43 +34,36 @@ public class JTheoriesExtension implements ParameterResolver {
 			parameterContext.getParameter().getType()
 		);
 
-		var parameterType = parameterContext.getParameter().getParameterizedType();
 		List<TypeArgument> typeArguments =
-			this.getTypeArguments(parameterContext, parameterType);
+			this.getTypeArguments(parameterContext.getParameter());
 		return generator.generate(typeArguments);
 	}
 
-	private List<TypeArgument> getTypeArguments(
-		ParameterContext parameterContext,
-		java.lang.reflect.Type parameterType
-	) {
+	private List<TypeArgument> getTypeArguments(Parameter parameter) {
 		final List<TypeArgument> typeArguments = new ArrayList<>();
 
-		if (parameterType instanceof ParameterizedType) {
+		if (parameter.getParameterizedType() instanceof ParameterizedType) {
 			Arrays
-				.stream(((ParameterizedType) parameterType).getActualTypeArguments())
+				.stream(
+					(
+						(AnnotatedParameterizedType) parameter.getAnnotatedType()
+					).getAnnotatedActualTypeArguments()
+				)
 				.forEach(
-					argumentType -> {
-						if (parameterType instanceof AnnotatedParameterizedType) {
-							typeArguments.add(
-								new TypeArgument(
-									(Class<?>) ((AnnotatedParameterizedType) argumentType).getType(),
-									Arrays
-										.stream(((AnnotatedParameterizedType) argumentType).getAnnotations())
-										.map(Annotation::annotationType)
-										.toArray(Class<?>[]::new)
-								)
-							);
-						} else {
-							typeArguments.add(
-								new TypeArgument((Class<?>) argumentType, new Class[] {})
-							);
-						}
-					}
+					argumentType ->
+						typeArguments.add(
+							new TypeArgument(
+								(Class<?>) argumentType.getType(),
+								Arrays
+									.stream(argumentType.getAnnotations())
+									.map(Annotation::annotationType)
+									.toArray(Class<?>[]::new)
+							)
+						)
 				);
 		} else {
 			Class<?>[] annotations = Arrays
-				.stream(parameterContext.getParameter().getAnnotations())
+				.stream(parameter.getAnnotations())
 				.map(Annotation::annotationType)
 				.toArray(Class[]::new);
 			typeArguments.add(new TypeArgument(null, annotations));

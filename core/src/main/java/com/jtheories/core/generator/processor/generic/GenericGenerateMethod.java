@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
 public class GenericGenerateMethod {
@@ -85,16 +86,27 @@ public class GenericGenerateMethod {
 				0
 			);
 		} else {
-			return CodeBlock.of(
-				"$T $N = ($T) $T.getGenerator($T.class).generate($T.asList(typeArguments.get($L)))",
-				parameter.asType(),
-				ParameterSpec.get(parameter),
-				parameter.asType(),
-				Generators.class,
-				this.information.getTypeUtils().erasure(parameter.asType()),
-				Arrays.class,
-				0L
-			);
+			if (((DeclaredType) parameter.asType()).getTypeArguments().isEmpty()) {
+				return CodeBlock.of(
+					"$T $N = ($T) $T.gen($T.class)",
+					parameter.asType(),
+					ParameterSpec.get(parameter),
+					parameter.asType(),
+					Generators.class,
+					this.information.getTypeUtils().erasure(parameter.asType())
+				);
+			} else {
+				return CodeBlock.of(
+					"$T $N = ($T)$T.getGenerator($T.class).generate($T.asList(typeArguments.get($L)))",
+					parameter.asType(),
+					ParameterSpec.get(parameter),
+					parameter.asType(),
+					Generators.class,
+					this.information.getTypeUtils().erasure(parameter.asType()),
+					Arrays.class,
+					0
+				);
+			}
 		}
 	}
 }
