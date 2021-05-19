@@ -1,6 +1,7 @@
 package com.jtheories.core.generator;
 
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
 
 public class TypeArgument<T> {
 
@@ -50,5 +51,17 @@ public class TypeArgument<T> {
 
 	public boolean hasChildren() {
 		return this.children.length != 0;
+	}
+
+	@Override
+	public String toString() {
+		return (
+			"TypeArgument{" +
+			"type=" +
+			this.type +
+			", children=" +
+			Arrays.toString(this.children) +
+			'}'
+		);
 	}
 }

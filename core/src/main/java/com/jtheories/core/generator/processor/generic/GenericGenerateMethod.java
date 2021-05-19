@@ -92,14 +92,18 @@ public class GenericGenerateMethod {
 				);
 			} else {
 				return CodeBlock.of(
-					"$T $N = ($T)$T.getGenerator($T.class).generate(new $T($T.class, typeArgument.getChildren()))",
+					"$T $N = ($T)$T.gen(new $T($T.class, new $T<?>[]{ new $T<>($T.class)}))",
 					parameter.asType(),
 					ParameterSpec.get(parameter),
 					parameter.asType(),
 					Generators.class,
-					this.information.getTypeUtils().erasure(parameter.asType()),
 					TypeArgument.class,
-					parameterType
+					parameterType,
+					TypeArgument.class,
+					TypeArgument.class,
+					// TODO: Support meta-programmatic creation of recursive type parameters from this list
+					// If TARGET GENERATOR is a parameterized class, we need to pass TARGET's CHILDREN instead of type args
+					((DeclaredType) parameter.asType()).getTypeArguments().get(0)
 				);
 			}
 		}
