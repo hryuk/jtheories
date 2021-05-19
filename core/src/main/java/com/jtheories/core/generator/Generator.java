@@ -1,8 +1,5 @@
 package com.jtheories.core.generator;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public interface Generator<T> {
 	default T generateBasic() {
 		throw new AssertionError("Wrong generate method invoked");
@@ -12,5 +9,5 @@ public interface Generator<T> {
 		throw new AssertionError("Wrong generate method invoked");
 	}
 
-	T generate(List<TypeArgument> typeArguments);
+	T generate(TypeArgument<?> typeArgument);
 }

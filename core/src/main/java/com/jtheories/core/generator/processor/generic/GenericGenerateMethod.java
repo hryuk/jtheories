@@ -3,9 +3,10 @@ package com.jtheories.core.generator.processor.generic;
 import com.jtheories.core.generator.Generators;
 import com.jtheories.core.generator.TypeArgument;
 import com.jtheories.core.generator.processor.GeneratorInformation;
-import com.squareup.javapoet.*;
-import java.util.Arrays;
-import java.util.List;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.TypeName;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -42,22 +43,17 @@ public class GenericGenerateMethod {
 			MethodSpec
 				.methodBuilder("generate")
 				.addModifiers(Modifier.PUBLIC)
-				.addParameter(
-					ParameterizedTypeName.get(List.class, TypeArgument.class),
-					"typeArguments"
-				)
+				.addParameter(TypeName.get(TypeArgument.class), "typeArgument")
 				.addCode(codeBlockBuilder.build())
 				.addStatement(
 					"return $T.super.generate($L)",
 					this.information.getClassName(),
 					CodeBlock.join(paramNames, ", ")
 				)
-				.returns(this.information.getReturnClassName())
+				.returns(
+					TypeName.get(this.information.getDefaultGenerateMethod().getReturnType())
+				)
 				.build();
-	}
-
-	public ClassName getReturnType() {
-		return this.information.getReturnClassName();
 	}
 
 	public MethodSpec getGenerateMethod() {
@@ -77,34 +73,33 @@ public class GenericGenerateMethod {
 
 		if (this.information.getTypeUtils().isSameType(parameterType, supplierType)) {
 			return CodeBlock.of(
-				"$T $N = () -> (T)$T.getGenerator(typeArguments.get($L).getType()).generate($T.asList(typeArguments.get($L)))",
+				"$T $N = () -> (T)$T.gen(typeArgument.getChildren()[$L])",
 				parameter.asType(),
 				ParameterSpec.get(parameter),
 				Generators.class,
-				0,
-				Arrays.class,
 				0
 			);
 		} else {
 			if (((DeclaredType) parameter.asType()).getTypeArguments().isEmpty()) {
 				return CodeBlock.of(
-					"$T $N = ($T) $T.gen($T.class)",
+					"$T $N = ($T) $T.gen(new $T<>($T.class))",
 					parameter.asType(),
 					ParameterSpec.get(parameter),
 					parameter.asType(),
 					Generators.class,
+					TypeArgument.class,
 					this.information.getTypeUtils().erasure(parameter.asType())
 				);
 			} else {
 				return CodeBlock.of(
-					"$T $N = ($T)$T.getGenerator($T.class).generate($T.asList(typeArguments.get($L)))",
+					"$T $N = ($T)$T.getGenerator($T.class).generate(new $T($T.class, typeArgument.getChildren()))",
 					parameter.asType(),
 					ParameterSpec.get(parameter),
 					parameter.asType(),
 					Generators.class,
 					this.information.getTypeUtils().erasure(parameter.asType()),
-					Arrays.class,
-					0
+					TypeArgument.class,
+					parameterType
 				);
 			}
 		}
