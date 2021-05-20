@@ -7,15 +7,16 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
-
+import com.squareup.javapoet.TypeVariableName;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import javax.lang.model.type.TypeVariable;
 
 public class GenericGenerateMethod {
 
@@ -65,19 +66,18 @@ public class GenericGenerateMethod {
 		return this.generateMethod;
 	}
 
-	private static boolean isPlainType(VariableElement parameter) {
-		if (TypeKind.DECLARED.equals(parameter.asType().getKind())) {
-			return ((DeclaredType) parameter.asType()).getTypeArguments().isEmpty();
-		}
-		if (TypeKind.TYPEVAR.equals(parameter.asType().getKind())) {
+	private static boolean isPlainType(TypeMirror type) {
+		if (isTypeVar(type)) {
 			return false;
-		} else {
-			throw new AssertionError("Poor panda :(");
 		}
+		if (TypeKind.DECLARED.equals(type.getKind())) {
+			return ((DeclaredType) type).getTypeArguments().isEmpty();
+		}
+		throw new AssertionError("Unsupported parameter type");
 	}
 
-	private static boolean isTypeVar(VariableElement parameter) {
-		return TypeKind.TYPEVAR.equals(parameter.asType().getKind());
+	private static boolean isTypeVar(TypeMirror type) {
+		return TypeKind.TYPEVAR.equals(type.getKind());
 	}
 
 	private CodeBlock generateAssignment(VariableElement parameter) {
@@ -86,44 +86,81 @@ public class GenericGenerateMethod {
 		// Parameter's type erasure, i.e.: Collection
 		var typeErasure = this.information.getTypeUtils().erasure(parameterType);
 
+		// The parameter is of a plain type, such as String
+		if (isPlainType(parameter.asType())) {
+			return this.generatePlainTypeAssignment(parameter, parameterType);
+		}
+
+		// The parameter is of a generic type, the likes of T
+		if (isTypeVar(parameter.asType())) {
+			return this.generateTypeVarAssignment(parameter, typeErasure);
+		}
+
 		// The parameter is of a generic Supplier type, like Supplier<N>
 		if (this.isSupplier(typeErasure)) {
+			return this.generateSupplierAssignment(
+					parameter,
+					(DeclaredType) parameterType,
+					typeErasure
+				);
+		}
+
+		// Otherwise, the parameter is of a parameterized type like Collection<T>
+		return this.generateParameterizedTypeAssignment(
+				parameter,
+				(DeclaredType) parameterType,
+				typeErasure
+			);
+	}
+
+	private CodeBlock generateSupplierAssignment(
+		VariableElement parameter,
+		DeclaredType parameterType,
+		TypeMirror typeErasure
+	) {
+		// Suppliers have a single type parameter
+		var supplierType = parameterType.getTypeArguments().get(0);
+		if (isPlainType(supplierType)) {
+			// Which can be a plain type like String
+			return CodeBlock.of(
+				"$T $N = () -> $T.gen(new $T<>($T.class))",
+				typeErasure,
+				ParameterSpec.get(parameter),
+				Generators.class,
+				TypeArgument.class,
+				supplierType
+			);
+		}
+
+		if (isTypeVar(supplierType)) {
+			// Or a type variable like T
 			return CodeBlock.of(
 				"$T $N = () -> $T.gen(typeArgument.getChildren()[$L])",
 				typeErasure,
 				ParameterSpec.get(parameter),
 				Generators.class,
-				0
+				this.getChildIndex(supplierType)
 			);
 		}
 
-		// The parameter is of a plain type, such as String
-		if (isPlainType(parameter)) {
-			return CodeBlock.of(
-				"$T $N = ($T) $T.gen(new $T<>($T.class))",
-				typeErasure,
-				ParameterSpec.get(parameter),
-				typeErasure,
-				Generators.class,
-				TypeArgument.class,
-				typeErasure
-			);
-		}
+		throw new AssertionError("Supplier of unsupported type");
+	}
 
-		// The parameter is of a generic type, the likes of T
-		if (isTypeVar(parameter)) {
-			return CodeBlock.of(
-				"$T $N = ($T) $T.gen(typeArgument.getChildren()[0])",
-				typeErasure,
-				ParameterSpec.get(parameter),
-				typeErasure,
-				Generators.class
-			);
-		}
-
-		// Otherwise, the parameter is of a parameterized type like Collection<T>
-		var typeArguments = ((DeclaredType) parameterType).getTypeArguments();
-
+	/**
+	 * This generates an assignment for a parameterized type, for example:
+	 * <p>
+	 * {@code Collection collection = (Collection) Generators.gen(new TypeArgument(Collection.class, ~appropriate children TypeArgument~));}
+	 *
+	 * @param parameter     the parameter itself
+	 * @param parameterType the parameter's type
+	 * @param typeErasure   the type erasure of the parameter
+	 * @return a {@link CodeBlock} for an assignment
+	 */
+	private CodeBlock generateParameterizedTypeAssignment(
+		VariableElement parameter,
+		DeclaredType parameterType,
+		TypeMirror typeErasure
+	) {
 		return CodeBlock.of(
 			"$T $N = ($T) $T.gen(new $T($T.class, $L))",
 			typeErasure,
@@ -132,17 +169,88 @@ public class GenericGenerateMethod {
 			Generators.class,
 			TypeArgument.class,
 			typeErasure,
-			this.createChildrenTypeArgument(typeArguments)
+			this.createChildrenTypeArgument(parameterType.getTypeArguments())
 		);
+	}
+
+	/**
+	 * This generates an assignment for a type variable object, for example:
+	 * <p>
+	 * {@code Object t = (Object) Generators.gen(typeArgument.getChildren()[2]);}
+	 *
+	 * @param parameter   the parameter itself
+	 * @param typeErasure the type erasure of the parameter
+	 * @return a {@link CodeBlock} for an assignment
+	 */
+	private CodeBlock generateTypeVarAssignment(
+		VariableElement parameter,
+		TypeMirror typeErasure
+	) {
+		return CodeBlock.of(
+			"$T $N = ($T) $T.gen(typeArgument.getChildren()[$L])",
+			typeErasure,
+			ParameterSpec.get(parameter),
+			typeErasure,
+			Generators.class,
+			this.getChildIndex(parameter.asType())
+		);
+	}
+
+	/**
+	 * This generates an assignment for a plain old type, for example:
+	 * <p>
+	 * {@code String string = (String) Generators.gen(new TypeArgument(String.class));}
+	 *
+	 * @param parameter     the parameter itself
+	 * @param parameterType the type erasure of the parameter
+	 * @return a {@link CodeBlock} for an assignment
+	 */
+	private CodeBlock generatePlainTypeAssignment(
+		VariableElement parameter,
+		TypeMirror parameterType
+	) {
+		return CodeBlock.of(
+			"$T $N = ($T) $T.gen(new $T<>($T.class))",
+			parameterType,
+			ParameterSpec.get(parameter),
+			parameterType,
+			Generators.class,
+			TypeArgument.class,
+			parameterType
+		);
+	}
+
+	// Return the index of a type variable in the generator's TypeArgument.children array
+	private int getChildIndex(TypeMirror type) {
+		if (!isTypeVar(type)) {
+			throw new AssertionError(
+				"Expected type variable but got " + type.getKind() + " instead"
+			);
+		}
+		var typeVariable = TypeVariableName.get((TypeVariable) type);
+		var typeParameters =
+			this.information.getDefaultGenerateMethod()
+				.getTypeParameters()
+				.stream()
+				.map(TypeVariableName::get)
+				.collect(Collectors.toList());
+		var index = typeParameters.indexOf(typeVariable);
+		if (index == -1) {
+			throw new AssertionError(
+				"The method doesn't have a type parameter of this type, so you must be a wizard of some kind because that is not possible"
+			);
+		}
+		return index;
 	}
 
 	private CodeBlock createChildrenTypeArgument(List<? extends TypeMirror> typeArguments) {
 		return CodeBlock.of(
 			"new $T<?>[]{ $L }",
 			TypeArgument.class,
-			// TODO: Support meta-programmatic creation of recursive type parameters from this list
-			// If TARGET GENERATOR is a parameterized class, we need to pass TARGET's CHILDREN instead of type args
-			this.createChildTypeArgument(typeArguments.get(0))
+			typeArguments
+				.stream()
+				.map(this::createChildTypeArgument)
+				.collect(CodeBlock.joining(", "))
 		);
 	}
 
@@ -153,9 +261,8 @@ public class GenericGenerateMethod {
 		} else if (TypeKind.TYPEVAR.equals(typeMirror.getKind())) {
 			// Argument is a type variable like T, use received type parameters' children
 			return CodeBlock.of(
-				"typeArgument.getChildren()[0]",
-				TypeArgument.class,
-				typeMirror
+				"typeArgument.getChildren()[$L]",
+				this.getChildIndex(typeMirror)
 			);
 		}
 		throw new AssertionError("Saddest panda :(");
