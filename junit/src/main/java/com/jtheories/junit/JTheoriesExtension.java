@@ -21,16 +21,11 @@ public class JTheoriesExtension implements ParameterResolver {
 		ParameterContext parameterContext,
 		ExtensionContext extensionContext
 	) throws ParameterResolutionException {
-		try {
-			var typeArgument = Generators.getTypeArgument(
-				parameterContext.getParameter().getParameterizedType(),
-				parameterContext.getParameter().getAnnotatedType()
-			);
-			var generator = Generators.getGenerator(typeArgument.getType());
-			return generator.generate(typeArgument);
-		} catch (Exception e) {
-			// e.printStackTrace();
-			throw e;
-		}
+		var typeArgument = Generators.getTypeArgument(
+			parameterContext.getParameter().getParameterizedType(),
+			parameterContext.getParameter().getAnnotatedType()
+		);
+		var generator = Generators.getGenerator(typeArgument.getType());
+		return generator.generate(typeArgument);
 	}
 }

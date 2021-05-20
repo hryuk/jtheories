@@ -16,7 +16,6 @@ import javax.lang.model.type.TypeMirror;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class GenericGenerateMethod {
 
@@ -30,9 +29,9 @@ public class GenericGenerateMethod {
 
 		// Add assignment for each parameter
 		var methodParams = this.information.getDefaultGenerateMethod().getParameters();
-		IntStream
-			.range(0, methodParams.size())
-			.mapToObj(i -> this.generateAssignment(methodParams.get(i)))
+		methodParams
+			.stream()
+			.map(this::generateAssignment)
 			.forEach(codeBlockBuilder::addStatement);
 
 		var paramNames =
@@ -41,6 +40,11 @@ public class GenericGenerateMethod {
 				.stream()
 				.map(param -> CodeBlock.of(param.getSimpleName().toString()))
 				.collect(Collectors.toList());
+
+		var returnType = TypeName.get(
+			this.information.getTypeUtils()
+				.erasure(this.information.getDefaultGenerateMethod().getReturnType())
+		);
 
 		this.generateMethod =
 			MethodSpec
@@ -53,9 +57,7 @@ public class GenericGenerateMethod {
 					this.information.getClassName(),
 					CodeBlock.join(paramNames, ", ")
 				)
-				.returns(
-					TypeName.get(this.information.getDefaultGenerateMethod().getReturnType())
-				)
+				.returns(returnType)
 				.build();
 	}
 
@@ -64,7 +66,18 @@ public class GenericGenerateMethod {
 	}
 
 	private static boolean isPlainType(VariableElement parameter) {
-		return ((DeclaredType) parameter.asType()).getTypeArguments().isEmpty();
+		if (TypeKind.DECLARED.equals(parameter.asType().getKind())) {
+			return ((DeclaredType) parameter.asType()).getTypeArguments().isEmpty();
+		}
+		if (TypeKind.TYPEVAR.equals(parameter.asType().getKind())) {
+			return false;
+		} else {
+			throw new AssertionError("Poor panda :(");
+		}
+	}
+
+	private static boolean isTypeVar(VariableElement parameter) {
+		return TypeKind.TYPEVAR.equals(parameter.asType().getKind());
 	}
 
 	private CodeBlock generateAssignment(VariableElement parameter) {
@@ -73,38 +86,49 @@ public class GenericGenerateMethod {
 		// Parameter's type erasure, i.e.: Collection
 		var typeErasure = this.information.getTypeUtils().erasure(parameterType);
 
-		// The parameter is a Supplier
+		// The parameter is of a generic Supplier type, like Supplier<N>
 		if (this.isSupplier(typeErasure)) {
 			return CodeBlock.of(
-				"$T $N = () -> (T) $T.gen(typeArgument.getChildren()[$L])",
-				parameterType,
+				"$T $N = () -> $T.gen(typeArgument.getChildren()[$L])",
+				typeErasure,
 				ParameterSpec.get(parameter),
 				Generators.class,
 				0
 			);
 		}
 
-		// The parameter is a plain type, such as String
+		// The parameter is of a plain type, such as String
 		if (isPlainType(parameter)) {
 			return CodeBlock.of(
 				"$T $N = ($T) $T.gen(new $T<>($T.class))",
-				parameterType,
+				typeErasure,
 				ParameterSpec.get(parameter),
-				parameterType,
+				typeErasure,
 				Generators.class,
 				TypeArgument.class,
 				typeErasure
 			);
 		}
 
-		// Otherwise, the parameter is a parameterized type
+		// The parameter is of a generic type, the likes of T
+		if (isTypeVar(parameter)) {
+			return CodeBlock.of(
+				"$T $N = ($T) $T.gen(typeArgument.getChildren()[0])",
+				typeErasure,
+				ParameterSpec.get(parameter),
+				typeErasure,
+				Generators.class
+			);
+		}
+
+		// Otherwise, the parameter is of a parameterized type like Collection<T>
 		var typeArguments = ((DeclaredType) parameterType).getTypeArguments();
 
 		return CodeBlock.of(
-			"$T $N = ($T)$T.gen(new $T($T.class, $L))",
-			parameterType,
+			"$T $N = ($T) $T.gen(new $T($T.class, $L))",
+			typeErasure,
 			ParameterSpec.get(parameter),
-			parameterType,
+			typeErasure,
 			Generators.class,
 			TypeArgument.class,
 			typeErasure,

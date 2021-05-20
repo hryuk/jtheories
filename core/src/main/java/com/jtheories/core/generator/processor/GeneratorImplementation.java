@@ -8,7 +8,6 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
-import com.squareup.javapoet.TypeVariableName;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -79,8 +78,6 @@ public class GeneratorImplementation {
 			)
 			.addAnnotation(generatedAnnotation)
 			.addMethods(generatorMethods);
-
-		typeBuilder.addTypeVariable(TypeVariableName.get("T"));
 
 		return typeBuilder.build();
 	}
