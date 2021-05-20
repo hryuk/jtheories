@@ -26,7 +26,6 @@ public class JTheoriesExtension implements ParameterResolver {
 				parameterContext.getParameter().getParameterizedType(),
 				parameterContext.getParameter().getAnnotatedType()
 			);
-			System.out.println(typeArgument);
 			var generator = Generators.getGenerator(typeArgument.getType());
 			return generator.generate(typeArgument);
 		} catch (Exception e) {
