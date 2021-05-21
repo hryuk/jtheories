@@ -6,7 +6,7 @@ import com.jtheories.core.random.SourceOfRandom;
 @Generator
 public interface StringGenerator {
 	default String generate(SourceOfRandom random) {
-		final var MAX_STRING_LENGTH = 2048L;
+		final var MAX_STRING_LENGTH = 128L;
 
 		return random
 			.getRandom()
