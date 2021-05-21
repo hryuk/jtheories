@@ -1,12 +1,11 @@
 package com.jtheories.core.generator.processor;
 
-import com.jtheories.core.generator.TypeArgument;
+import com.jtheories.core.generator.meta.TypeArgument;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
-
-import javax.lang.model.element.Modifier;
 import java.util.stream.Collectors;
+import javax.lang.model.element.Modifier;
 
 public class GenericGenerateMethod {
 
