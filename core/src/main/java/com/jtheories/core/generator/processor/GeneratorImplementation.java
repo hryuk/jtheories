@@ -1,7 +1,6 @@
 package com.jtheories.core.generator.processor;
 
 import com.jtheories.core.generator.Generator;
-import com.jtheories.core.generator.processor.generic.GenericGenerateMethod;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
