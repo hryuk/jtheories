@@ -2,7 +2,6 @@ package com.jtheories.examples;
 
 public class VeryRealClass {
 
-	private final Boolean aBoolean;
 	private final Byte aByte;
 	private final Character character;
 	private final Short aShort;
@@ -12,7 +11,6 @@ public class VeryRealClass {
 	private final Double aDouble;
 
 	public VeryRealClass(
-		Boolean aBoolean,
 		Byte aByte,
 		Character character,
 		Short aShort,
@@ -21,7 +19,6 @@ public class VeryRealClass {
 		Float aFloat,
 		Double aDouble
 	) {
-		this.aBoolean = aBoolean;
 		this.aByte = aByte;
 		this.character = character;
 		this.aShort = aShort;
@@ -31,35 +28,31 @@ public class VeryRealClass {
 		this.aDouble = aDouble;
 	}
 
-	public Boolean getABoolean() {
-		return aBoolean;
-	}
-
 	public Byte getAByte() {
-		return aByte;
+		return this.aByte;
 	}
 
 	public Character getCharacter() {
-		return character;
+		return this.character;
 	}
 
 	public Short getAShort() {
-		return aShort;
+		return this.aShort;
 	}
 
 	public Integer getInteger() {
-		return integer;
+		return this.integer;
 	}
 
 	public Long getALong() {
-		return aLong;
+		return this.aLong;
 	}
 
 	public Float getAFloat() {
-		return aFloat;
+		return this.aFloat;
 	}
 
 	public Double getADouble() {
-		return aDouble;
+		return this.aDouble;
 	}
 }

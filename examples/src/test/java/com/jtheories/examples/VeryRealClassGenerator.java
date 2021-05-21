@@ -5,7 +5,6 @@ import com.jtheories.core.generator.processor.Generator;
 @Generator
 public interface VeryRealClassGenerator {
 	default VeryRealClass generate(
-		Boolean aBoolean,
 		Byte aByte,
 		Character character,
 		Short aShort,
@@ -14,15 +13,6 @@ public interface VeryRealClassGenerator {
 		Float aFloat,
 		Double aDouble
 	) {
-		return new VeryRealClass(
-			aBoolean,
-			aByte,
-			character,
-			aShort,
-			integer,
-			aLong,
-			aFloat,
-			aDouble
-		);
+		return new VeryRealClass(aByte, character, aShort, integer, aLong, aFloat, aDouble);
 	}
 }
