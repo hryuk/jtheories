@@ -2,7 +2,6 @@ package com.jtheories.generators.collections;
 
 import com.jtheories.core.generator.processor.Generator;
 import com.jtheories.core.random.SourceOfRandom;
-
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;

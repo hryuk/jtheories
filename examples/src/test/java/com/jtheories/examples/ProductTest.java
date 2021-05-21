@@ -4,12 +4,14 @@ import com.jtheories.junit.JTheoriesExtension;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(JTheoriesExtension.class)
 class ProductTest {
 
+	@Disabled
 	@RepeatedTest(200)
 	void productHasPriceAndName(Product product) {
 		Assertions.assertEquals(product.getId(), UUID.fromString(product.getId().toString()));
@@ -18,11 +20,13 @@ class ProductTest {
 		Assertions.assertNotEquals(0, product.getPrice() % 10);
 	}
 
+	@Disabled
 	@RepeatedTest(200)
 	void freeProductsCostNothing(@Free Product product) {
 		Assertions.assertEquals(0L, product.getPrice());
 	}
 
+	@Disabled
 	@RepeatedTest(200)
 	void productsHavePriceAndName(List<Product> products) {
 		products.forEach(
@@ -38,6 +42,7 @@ class ProductTest {
 		);
 	}
 
+	@Disabled
 	@RepeatedTest(200)
 	void productListIsFree(List<@Free Product> products) {
 		products.forEach(product -> Assertions.assertEquals(0L, product.getPrice()));
