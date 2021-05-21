@@ -1,20 +1,67 @@
 package com.jtheories.core.generator;
 
-public class TypeArgument {
+import java.lang.annotation.Annotation;
+import java.util.Arrays;
 
-	private final Class<?> type;
-	private final Class<?>[] annotations;
+public class TypeArgument<T> {
 
-	public TypeArgument(Class<?> type, Class<?>[] annotations) {
+	private final Class<T> type;
+	private final Annotation[] annotations;
+	private final TypeArgument<?>[] children;
+
+	public TypeArgument(Class<T> type) {
 		this.type = type;
-		this.annotations = annotations;
+		this.annotations = new Annotation[0];
+		this.children = new TypeArgument[0];
 	}
 
-	public Class<?> getType() {
+	public TypeArgument(Class<T> type, Annotation[] annotations) {
+		this.type = type;
+		this.annotations = annotations;
+		this.children = new TypeArgument[0];
+	}
+
+	public TypeArgument(Class<T> type, TypeArgument<?>[] children) {
+		this.type = type;
+		this.annotations = new Annotation[0];
+		this.children = children;
+	}
+
+	public TypeArgument(
+		Class<T> type,
+		Annotation[] annotations,
+		TypeArgument<?>[] children
+	) {
+		this.type = type;
+		this.annotations = annotations;
+		this.children = children;
+	}
+
+	public Class<T> getType() {
 		return this.type;
 	}
 
-	public Class<?>[] getAnnotations() {
+	public Annotation[] getAnnotations() {
 		return this.annotations;
+	}
+
+	public TypeArgument<?>[] getChildren() {
+		return this.children;
+	}
+
+	public boolean hasChildren() {
+		return this.children.length != 0;
+	}
+
+	@Override
+	public String toString() {
+		return (
+			"TypeArgument{" +
+			"type=" +
+			this.type +
+			", children=" +
+			Arrays.toString(this.children) +
+			'}'
+		);
 	}
 }

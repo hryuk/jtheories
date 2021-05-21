@@ -2,8 +2,6 @@ package com.jtheories.core.generator.processor;
 
 import com.google.auto.service.AutoService;
 import com.jtheories.core.generator.exceptions.GeneratorProcessorException;
-import com.jtheories.core.generator.processor.arbitrary.ArbitraryGeneratorImplementation;
-import com.jtheories.core.generator.processor.generic.GenericGeneratorImplementation;
 import java.util.Collection;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -63,9 +61,7 @@ public class GeneratorProcessor extends AbstractProcessor {
 
 	private GeneratorImplementation getGeneratorImplementation(TypeElement typeElement) {
 		var info = new GeneratorInformation(this.typeUtils, this.elementUtils, typeElement);
-		return info.isParameterized()
-			? new GenericGeneratorImplementation(info)
-			: new ArbitraryGeneratorImplementation(info);
+		return new GeneratorImplementation(info);
 	}
 
 	/**
