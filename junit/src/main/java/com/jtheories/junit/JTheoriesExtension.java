@@ -1,6 +1,7 @@
 package com.jtheories.junit;
 
 import com.jtheories.core.generator.Generators;
+import com.jtheories.core.generator.meta.TypeArgument;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
@@ -21,9 +22,10 @@ public class JTheoriesExtension implements ParameterResolver {
 		ParameterContext parameterContext,
 		ExtensionContext extensionContext
 	) throws ParameterResolutionException {
-		var typeArgument = Generators.getTypeArgument(
-			parameterContext.getParameter().getParameterizedType(),
-			parameterContext.getParameter().getAnnotatedType()
+		var parameter = parameterContext.getParameter();
+		var typeArgument = TypeArgument.getTypeArgument(
+			parameter.getType(),
+			parameter.getAnnotatedType()
 		);
 		var generator = Generators.getGenerator(typeArgument.getType());
 		return generator.generate(typeArgument);

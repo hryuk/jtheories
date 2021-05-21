@@ -2,21 +2,15 @@ package com.jtheories.core.generator;
 
 import com.jtheories.core.generator.exceptions.GeneratorInstantiationException;
 import com.jtheories.core.generator.exceptions.NoSuchGeneratorException;
+import com.jtheories.core.generator.meta.TypeArgument;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Stream;
 
 public class Generators {
 
@@ -57,39 +51,6 @@ public class Generators {
 
 	public static <T> T gen(TypeArgument<T> typeArgument) {
 		return getGenerator(typeArgument.getType()).generate(typeArgument);
-	}
-
-	public static TypeArgument<?> getTypeArgument(Type type, AnnotatedType annotatedType) {
-		var name = Optional
-			.of(type)
-			.filter(ParameterizedType.class::isInstance)
-			.map(ParameterizedType.class::cast)
-			.map(ParameterizedType::getRawType)
-			.orElse(annotatedType.getType())
-			.getTypeName();
-
-		Class<?> clazz;
-		try {
-			clazz = Class.forName(name);
-		} catch (ClassNotFoundException e) {
-			throw new GeneratorInstantiationException(
-				String.format("Unable to find class %s", name),
-				e
-			);
-		}
-
-		Annotation[] annotations = annotatedType.getDeclaredAnnotations();
-
-		TypeArgument<?>[] children = Stream
-			.of(annotatedType)
-			.filter(AnnotatedParameterizedType.class::isInstance)
-			.map(AnnotatedParameterizedType.class::cast)
-			.map(AnnotatedParameterizedType::getAnnotatedActualTypeArguments)
-			.flatMap(Arrays::stream)
-			.map(annotated -> Generators.getTypeArgument(annotated.getType(), annotated))
-			.toArray(TypeArgument[]::new);
-
-		return new TypeArgument<>(clazz, annotations, children);
 	}
 
 	private static <T> Generator<T> createGenerator(final Class<T> generatedType) {
