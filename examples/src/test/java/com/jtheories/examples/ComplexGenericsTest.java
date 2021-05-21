@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class ComplexGenericsTest {
 
 	@RepeatedTest(10)
+	@SuppressWarnings("unused")
 	void testGenerateComplexGenerics(ComplexGenerics<Long, Boolean> complexGenerics) {
 		Assertions.assertNotNull(complexGenerics);
 		Assertions.assertNotNull(complexGenerics.getA());
