@@ -2,11 +2,11 @@ package com.jtheories.examples;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.jtheories.junit.JTheoriesExtension;
+import com.jtheories.junit.JTheoriesParameterResolver;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(JTheoriesExtension.class)
+@ExtendWith(JTheoriesParameterResolver.class)
 class OrderTest {
 
 	@RepeatedTest(200)

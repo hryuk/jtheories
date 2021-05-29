@@ -1,14 +1,17 @@
 package com.jtheories.examples;
 
-import com.jtheories.junit.JTheoriesExtension;
+import com.jtheories.core.runner.JTheories;
+import com.jtheories.junit.JTheoriesParameterResolver;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(JTheoriesExtension.class)
+@ExtendWith(JTheoriesParameterResolver.class)
 class ProductTest {
 
 	@Disabled("Until constrains are added back")
@@ -42,9 +45,15 @@ class ProductTest {
 		);
 	}
 
-	@Disabled("Until constrains are added back")
-	@RepeatedTest(200)
-	void productListIsFree(List<@Free Product> products) {
-		products.forEach(product -> Assertions.assertEquals(0L, product.getPrice()));
+	@Test
+	void productListIsFree() {
+		JTheories
+			.<Collection<@Free Product>>forAll()
+			.check(
+				products -> {
+					Order order = new Order(products);
+					Assertions.assertEquals(0L, order.getTotalPrice());
+				}
+			);
 	}
 }

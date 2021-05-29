@@ -4,6 +4,8 @@ import com.jtheories.core.generator.exceptions.GeneratorProcessorException;
 import com.squareup.javapoet.JavaFile;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.processing.Filer;
 import javax.tools.JavaFileObject;
 
@@ -54,5 +56,43 @@ public class JavaWritter {
 				e
 			);
 		}
+	}
+
+	public void writeFile(String sourceFileName, JavaFile javaFile, List<String> imports) {
+		JavaFileObject builderFile;
+		try {
+			builderFile = this.filer.createSourceFile(sourceFileName);
+		} catch (IOException e) {
+			throw new GeneratorProcessorException(
+				String.format("Error creating generated file %s", sourceFileName),
+				e
+			);
+		}
+
+		try (var out = new PrintWriter(builderFile.openWriter())) {
+			out.print(this.injectImports(javaFile, imports));
+		} catch (IOException e) {
+			throw new GeneratorProcessorException(
+				String.format("Error writing generated file %s", sourceFileName),
+				e
+			);
+		}
+	}
+
+	private String injectImports(JavaFile javaFile, List<String> imports) {
+		String rawSource = javaFile.toString();
+
+		List<String> result = new ArrayList<>();
+		for (String s : rawSource.split("\n", -1)) {
+			result.add(s);
+			if (s.startsWith("package ")) {
+				result.addAll(imports);
+			}
+		}
+		return String.join("\n", result);
+	}
+
+	public Filer getFiler() {
+		return this.filer;
 	}
 }
