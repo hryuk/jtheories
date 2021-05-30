@@ -4,6 +4,7 @@ import com.jtheories.core.generator.exceptions.GeneratorProcessorException;
 import com.squareup.javapoet.JavaFile;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.processing.Filer;
@@ -58,7 +59,7 @@ public class JavaWritter {
 		}
 	}
 
-	public void writeFile(String sourceFileName, JavaFile javaFile, List<String> imports) {
+	public URI writeFile(String sourceFileName, JavaFile javaFile, List<String> imports) {
 		JavaFileObject builderFile;
 		try {
 			builderFile = this.filer.createSourceFile(sourceFileName);
@@ -77,6 +78,8 @@ public class JavaWritter {
 				e
 			);
 		}
+
+		return builderFile.toUri();
 	}
 
 	private String injectImports(JavaFile javaFile, List<String> imports) {

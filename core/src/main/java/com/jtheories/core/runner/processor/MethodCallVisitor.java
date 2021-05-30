@@ -1,5 +1,7 @@
 package com.jtheories.core.runner.processor;
 
+import static java.util.Collections.singleton;
+
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -12,21 +14,31 @@ import com.jtheories.core.generator.processor.JavaWritter;
 import com.jtheories.core.runner.Theory;
 import com.squareup.javapoet.*;
 import com.sun.source.tree.CompilationUnitTree;
+import java.io.*;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.lang.model.element.Modifier;
+import javax.tools.*;
 
 class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 
 	private final JavaWritter javaWritter;
 	private final CompilationUnitTree compilationUnit;
+	private final JavaFileManager javaFileManager;
 
-	MethodCallVisitor(JavaWritter javaWritter, CompilationUnitTree compilationUnit) {
+	MethodCallVisitor(
+		JavaWritter javaWritter,
+		CompilationUnitTree compilationUnit,
+		JavaFileManager javaFileManager
+	) {
 		this.javaWritter = javaWritter;
 		this.compilationUnit = compilationUnit;
+		this.javaFileManager = javaFileManager;
 	}
 
 	private boolean isJTheoriesCall(MethodCallExpr methodCallExpr) {
@@ -64,77 +76,145 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 	}
 
 	private void createTheory(MethodCallExpr methodCallExpr, NodeList<Type> args) {
-		String packageName =
-			this.compilationUnit.getPackageName().toString().replace('.', '_');
-
 		String className = this.compilationUnit.getSourceFile().getName();
 
 		className = className.substring(0, className.lastIndexOf('.'));
 		className = className.substring(className.lastIndexOf('/') + 1);
 
-		int lineNumber = methodCallExpr.getBegin().get().line;
+		int lineNumber = methodCallExpr
+			.getScope()
+			.flatMap(Expression::toMethodCallExpr)
+			.map(MethodCallExpr::getName)
+			.map(simpleName -> simpleName.getBegin().map(begin -> begin.line).orElseThrow())
+			.orElseThrow();
 
 		CodeBlock buildArgsBlock = this.createBuildArgsBlock(args);
 
-		var theoryClassName = String.format(
-			"$Theory_%s_%s_L%s",
-			packageName,
-			className,
-			lineNumber
-		);
+		var theoryClassName = String.format("Theory_%s_L%s", className, lineNumber);
 
-		this.javaWritter.writeFile(
-				String.format(
-					"%s.%s",
-					this.compilationUnit.getPackageName().toString(),
-					theoryClassName
-				),
-				JavaFile
-					.builder(
+		URI generatedFile =
+			this.javaWritter.writeFile(
+					String.format(
+						"%s.%s",
 						this.compilationUnit.getPackageName().toString(),
-						TypeSpec
-							.classBuilder(theoryClassName)
-							.addSuperinterface(
-								ParameterizedTypeName.get(
-									ClassName.get(Theory.class),
-									ClassName.bestGuess(args.get(0).asClassOrInterfaceType().toString())
-								)
-							)
-							.addField(
-								ClassName.bestGuess(args.get(0).asClassOrInterfaceType().toString()),
-								"value",
-								Modifier.PRIVATE,
-								Modifier.FINAL
-							)
-							.addMethod(MethodSpec.constructorBuilder().addCode(buildArgsBlock).build())
-							.addMethod(
-								MethodSpec
-									.methodBuilder("check")
-									.addParameter(
-										ParameterSpec
-											.builder(
-												ParameterizedTypeName.get(
-													ClassName.get(Consumer.class),
-													ClassName.bestGuess(
-														args.get(0).asClassOrInterfaceType().toString()
-													)
-												),
-												"property"
-											)
-											.build()
+						theoryClassName
+					),
+					JavaFile
+						.builder(
+							this.compilationUnit.getPackageName().toString(),
+							TypeSpec
+								.classBuilder(theoryClassName)
+								.addModifiers(Modifier.PUBLIC)
+								.addSuperinterface(
+									ParameterizedTypeName.get(
+										ClassName.get(Theory.class),
+										ClassName.bestGuess(args.get(0).asClassOrInterfaceType().toString())
 									)
-									.addModifiers(Modifier.PUBLIC)
-									.addStatement(CodeBlock.of("property.accept(this.value)"))
-									.build()
-							)
-							.build()
+								)
+								.addField(
+									ClassName.bestGuess(args.get(0).asClassOrInterfaceType().toString()),
+									"value",
+									Modifier.PRIVATE,
+									Modifier.FINAL
+								)
+								.addMethod(
+									MethodSpec
+										.constructorBuilder()
+										.addCode(buildArgsBlock)
+										.addModifiers(Modifier.PUBLIC)
+										.build()
+								)
+								.addMethod(
+									MethodSpec
+										.methodBuilder("check")
+										.addParameter(
+											ParameterSpec
+												.builder(
+													ParameterizedTypeName.get(
+														ClassName.get(Consumer.class),
+														ClassName.bestGuess(
+															args.get(0).asClassOrInterfaceType().toString()
+														)
+													),
+													"property"
+												)
+												.build()
+										)
+										.addModifiers(Modifier.PUBLIC)
+										.addStatement(CodeBlock.of("property.accept(this.value)"))
+										.build()
+								)
+								.build()
+						)
+						.build(),
+					this.compilationUnit.getImports()
+						.stream()
+						.map(Object::toString)
+						.collect(Collectors.toList())
+				);
+
+		this.compileFile(generatedFile);
+	}
+
+	private void compileFile(URI fileName) {
+		var compiler = ToolProvider.getSystemJavaCompiler();
+		DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
+		try {
+			compiler
+				.getTask(
+					null,
+					this.javaFileManager,
+					diagnosticCollector,
+					new ArrayList<>(),
+					null,
+					singleton(
+						new TheoryJavaFile(
+							fileName,
+							this.readFileContent(Paths.get(fileName).toString())
+						)
 					)
-					.build(),
-				this.compilationUnit.getImports()
-					.stream()
-					.map(Object::toString)
-					.collect(Collectors.toList())
-			);
+				)
+				.call();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private String readFileContent(String filePath) {
+		try {
+			return this.readFromInputStream(new FileInputStream(filePath));
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Error compiling file");
+		}
+	}
+
+	private String readFromInputStream(InputStream inputStream) throws IOException {
+		StringBuilder resultStringBuilder = new StringBuilder();
+		try (
+			BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))
+		) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				resultStringBuilder.append(line).append("\n");
+			}
+		}
+		return resultStringBuilder.toString();
+	}
+
+	private static class TheoryJavaFile extends SimpleJavaFileObject {
+
+		private final String sourceCode;
+
+		TheoryJavaFile(URI className, String sourceCode) {
+			super(className, Kind.SOURCE);
+			this.sourceCode = sourceCode;
+		}
+
+		@Override
+		public CharSequence getCharContent(boolean ignoreEncodingErrors) throws IOException {
+			return this.sourceCode;
+		}
 	}
 
 	private CodeBlock createBuildArgsBlock(NodeList<Type> args) {

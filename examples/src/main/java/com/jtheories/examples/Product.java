@@ -17,14 +17,29 @@ public class Product {
 	}
 
 	public UUID getId() {
-		return id;
+		return this.id;
 	}
 
 	public String getName() {
-		return name;
+		return this.name;
 	}
 
 	public Long getPrice() {
-		return price;
+		return this.price;
+	}
+
+	@Override
+	public String toString() {
+		return (
+			"Product{" +
+			"id=" +
+			this.id +
+			", name='" +
+			this.name +
+			'\'' +
+			", price=" +
+			this.price +
+			'}'
+		);
 	}
 }

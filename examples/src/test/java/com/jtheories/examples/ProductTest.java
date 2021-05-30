@@ -51,6 +51,7 @@ class ProductTest {
 			.<Collection<@Free Product>>forAll()
 			.check(
 				products -> {
+					products.forEach(System.out::println);
 					Order order = new Order(products);
 					Assertions.assertEquals(0L, order.getTotalPrice());
 				}
