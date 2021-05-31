@@ -1,24 +1,28 @@
 package com.jtheories.examples;
 
-import com.jtheories.junit.JTheoriesParameterResolver;
+import com.jtheories.core.runner.JTheories;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
 
-@ExtendWith(JTheoriesParameterResolver.class)
 class VeryRealClassTest {
 
-	@RepeatedTest(200)
+	@Test
 	@SuppressWarnings("unused")
-	void doSomethingTest(VeryRealClass veryRealClass) {
-		Assertions.assertNotNull(veryRealClass);
-		// This checks that the objects are actually of the expected types
-		byte aByte = veryRealClass.getAByte();
-		double aDouble = veryRealClass.getADouble();
-		float aFloat = veryRealClass.getAFloat();
-		long aLong = veryRealClass.getALong();
-		short aShort = veryRealClass.getAShort();
-		char aChar = veryRealClass.getCharacter();
-		int anInt = veryRealClass.getInteger();
+	void doSomethingTest() {
+		JTheories
+			.<VeryRealClass>forAll()
+			.check(
+				veryRealClass -> {
+					Assertions.assertNotNull(veryRealClass);
+					// This checks that the objects are actually of the expected types
+					byte aByte = veryRealClass.getAByte();
+					double aDouble = veryRealClass.getADouble();
+					float aFloat = veryRealClass.getAFloat();
+					long aLong = veryRealClass.getALong();
+					short aShort = veryRealClass.getAShort();
+					char aChar = veryRealClass.getCharacter();
+					int anInt = veryRealClass.getInteger();
+				}
+			);
 	}
 }

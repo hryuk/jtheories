@@ -16,6 +16,7 @@ import com.squareup.javapoet.*;
 import com.sun.source.tree.CompilationUnitTree;
 import java.io.*;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,7 +24,10 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.lang.model.element.Modifier;
-import javax.tools.*;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaFileManager;
+import javax.tools.JavaFileObject;
+import javax.tools.ToolProvider;
 
 class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 
@@ -92,6 +96,60 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 
 		var theoryClassName = String.format("Theory_%s_L%s", className, lineNumber);
 
+		var theoryClassBuilder = TypeSpec.classBuilder(theoryClassName);
+		theoryClassBuilder.addModifiers(Modifier.PUBLIC);
+
+		theoryClassBuilder.superclass(
+			ParameterizedTypeName.get(
+				ClassName.get(Theory.class),
+				ClassName.bestGuess(args.get(0).asClassOrInterfaceType().getName().toString())
+			)
+		);
+
+		theoryClassBuilder.addField(
+			ClassName.bestGuess(args.get(0).asClassOrInterfaceType().getName().toString()),
+			"value",
+			Modifier.PRIVATE,
+			Modifier.FINAL
+		);
+
+		theoryClassBuilder.addMethod(
+			MethodSpec
+				.constructorBuilder()
+				.addCode(buildArgsBlock)
+				.addModifiers(Modifier.PUBLIC)
+				.build()
+		);
+
+		theoryClassBuilder.addMethod(
+			MethodSpec
+				.methodBuilder("checkOne")
+				.addAnnotation(Override.class)
+				.addParameter(
+					ParameterSpec
+						.builder(
+							ParameterizedTypeName.get(
+								ClassName.get(Consumer.class),
+								ClassName.bestGuess(
+									args.get(0).asClassOrInterfaceType().getName().toString()
+								)
+							),
+							"property"
+						)
+						.build()
+				)
+				.addModifiers(Modifier.PROTECTED)
+				.addStatement(CodeBlock.of("property.accept(this.value)"))
+				.build()
+		);
+
+		JavaFile theoryFile = JavaFile
+			.builder(
+				this.compilationUnit.getPackageName().toString(),
+				theoryClassBuilder.build()
+			)
+			.build();
+
 		URI generatedFile =
 			this.javaWritter.writeFile(
 					String.format(
@@ -99,54 +157,7 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 						this.compilationUnit.getPackageName().toString(),
 						theoryClassName
 					),
-					JavaFile
-						.builder(
-							this.compilationUnit.getPackageName().toString(),
-							TypeSpec
-								.classBuilder(theoryClassName)
-								.addModifiers(Modifier.PUBLIC)
-								.addSuperinterface(
-									ParameterizedTypeName.get(
-										ClassName.get(Theory.class),
-										ClassName.bestGuess(args.get(0).asClassOrInterfaceType().toString())
-									)
-								)
-								.addField(
-									ClassName.bestGuess(args.get(0).asClassOrInterfaceType().toString()),
-									"value",
-									Modifier.PRIVATE,
-									Modifier.FINAL
-								)
-								.addMethod(
-									MethodSpec
-										.constructorBuilder()
-										.addCode(buildArgsBlock)
-										.addModifiers(Modifier.PUBLIC)
-										.build()
-								)
-								.addMethod(
-									MethodSpec
-										.methodBuilder("check")
-										.addParameter(
-											ParameterSpec
-												.builder(
-													ParameterizedTypeName.get(
-														ClassName.get(Consumer.class),
-														ClassName.bestGuess(
-															args.get(0).asClassOrInterfaceType().toString()
-														)
-													),
-													"property"
-												)
-												.build()
-										)
-										.addModifiers(Modifier.PUBLIC)
-										.addStatement(CodeBlock.of("property.accept(this.value)"))
-										.build()
-								)
-								.build()
-						)
-						.build(),
+					theoryFile,
 					this.compilationUnit.getImports()
 						.stream()
 						.map(Object::toString)
@@ -190,31 +201,18 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 	}
 
 	private String readFromInputStream(InputStream inputStream) throws IOException {
-		StringBuilder resultStringBuilder = new StringBuilder();
+		var resultStringBuilder = new StringBuilder();
 		try (
-			BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))
+			var bufferedReader = new BufferedReader(
+				new InputStreamReader(inputStream, StandardCharsets.UTF_8)
+			)
 		) {
 			String line;
-			while ((line = br.readLine()) != null) {
+			while ((line = bufferedReader.readLine()) != null) {
 				resultStringBuilder.append(line).append("\n");
 			}
 		}
 		return resultStringBuilder.toString();
-	}
-
-	private static class TheoryJavaFile extends SimpleJavaFileObject {
-
-		private final String sourceCode;
-
-		TheoryJavaFile(URI className, String sourceCode) {
-			super(className, Kind.SOURCE);
-			this.sourceCode = sourceCode;
-		}
-
-		@Override
-		public CharSequence getCharContent(boolean ignoreEncodingErrors) throws IOException {
-			return this.sourceCode;
-		}
 	}
 
 	private CodeBlock createBuildArgsBlock(NodeList<Type> args) {
@@ -235,19 +233,16 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 						arguments ->
 							arguments
 								.stream()
-								.map(a -> a.asClassOrInterfaceType().getName())
+								.map(a -> a.asClassOrInterfaceType().getName().toString())
 								.forEach(
-									a ->
-										argList.add(
-											CodeBlock.of("new TypeArgument<>($L.class)", a.asString())
-										)
+									a -> argList.add(CodeBlock.of("new TypeArgument<>($L.class)", a))
 								)
 					);
 
 				codeBuilder.addStatement(
 					"typeArguments.add(new $T($L.class,new $T<?>[]{$L}))",
 					TypeArgument.class,
-					arg.asClassOrInterfaceType().getName(),
+					arg.asClassOrInterfaceType().getName().toString(),
 					TypeArgument.class,
 					CodeBlock.join(argList, ",")
 				);
@@ -256,7 +251,7 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 
 		codeBuilder.addStatement(
 			"this.value=($L) $T.gen(typeArguments.get(0))",
-			ClassName.bestGuess(args.get(0).asClassOrInterfaceType().toString()),
+			ClassName.bestGuess(args.get(0).asClassOrInterfaceType().getName().toString()),
 			Generators.class
 		);
 
