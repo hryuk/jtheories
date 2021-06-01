@@ -188,6 +188,7 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 				.call();
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw e;
 		}
 	}
 

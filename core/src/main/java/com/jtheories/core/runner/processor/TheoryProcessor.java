@@ -32,6 +32,7 @@ public class TheoryProcessor extends AbstractProcessor {
 	@Override
 	public synchronized void init(ProcessingEnvironment processingEnv) {
 		super.init(processingEnv);
+
 		this.javaWritter = new JavaWritter(processingEnv.getFiler());
 		this.javaFileManager = getJavaFileManager(processingEnv);
 		var trees = Trees.instance(processingEnv);
@@ -97,7 +98,9 @@ public class TheoryProcessor extends AbstractProcessor {
 			var get = context.getClass().getMethod("get", Class.class);
 
 			fileManager = (JavaFileManager) get.invoke(context, JavaFileManager.class);
-		} catch (Exception exception) {}
+		} catch (Exception exception) {
+			exception.printStackTrace();
+		}
 
 		return fileManager;
 	}
