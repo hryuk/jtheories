@@ -190,6 +190,8 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 			e.printStackTrace();
 			throw e;
 		}
+
+		System.out.println(diagnosticCollector.getDiagnostics());
 	}
 
 	private String readFileContent(String filePath) {
