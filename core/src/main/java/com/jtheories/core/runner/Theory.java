@@ -11,6 +11,10 @@ public abstract class Theory<T> {
 		LongStream.range(0, this.numberOfTrials).forEach(i -> this.checkOne(property));
 	}
 
+	public void run(final Consumer<T> property) {
+		this.checkOne(property);
+	}
+
 	public Long getNumberOfTrials() {
 		return this.numberOfTrials;
 	}

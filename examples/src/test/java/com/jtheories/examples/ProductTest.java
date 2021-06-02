@@ -85,4 +85,19 @@ class ProductTest {
 				}
 			);
 	}
+
+	@Test
+	void commetDoesNotBreakThings() {
+		JTheories
+			// comment 1
+			/*comment 2*/.<Collection</*comment 3*/Product>>/*coment 4*/forAll()
+			//comment 5
+			.check(
+				products -> {
+					System.out.println(products);
+					Order order = new Order(products);
+					Assertions.assertTrue(Objects.nonNull(order.getTotalPrice()));
+				}
+			);
+	}
 }
