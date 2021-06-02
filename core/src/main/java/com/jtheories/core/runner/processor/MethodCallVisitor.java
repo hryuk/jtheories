@@ -107,10 +107,15 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 		);
 
 		theoryClassBuilder.addField(
-			ClassName.bestGuess(args.get(0).asClassOrInterfaceType().getName().toString()),
-			"value",
-			Modifier.PRIVATE,
-			Modifier.FINAL
+			FieldSpec
+				.builder(
+					ParameterizedTypeName.get(List.class, TypeArgument.class),
+					"typeArguments",
+					Modifier.PRIVATE,
+					Modifier.FINAL
+				)
+				.initializer(CodeBlock.of("new $T<>()", ArrayList.class))
+				.build()
 		);
 
 		theoryClassBuilder.addMethod(
@@ -139,7 +144,15 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 						.build()
 				)
 				.addModifiers(Modifier.PROTECTED)
-				.addStatement(CodeBlock.of("property.accept(this.value)"))
+				.addStatement(
+					CodeBlock.of(
+						"property.accept(($L) $T.gen(typeArguments.get(0)))",
+						ClassName.bestGuess(
+							args.get(0).asClassOrInterfaceType().getName().toString()
+						),
+						Generators.class
+					)
+				)
 				.build()
 		);
 
@@ -190,8 +203,6 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 			e.printStackTrace();
 			throw e;
 		}
-
-		System.out.println(diagnosticCollector.getDiagnostics());
 	}
 
 	private String readFileContent(String filePath) {
@@ -199,7 +210,7 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 			return this.readFromInputStream(new FileInputStream(filePath));
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new RuntimeException("Error compiling file");
+			throw new IllegalStateException("Error opening file for compilation");
 		}
 	}
 
@@ -220,12 +231,7 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 
 	private CodeBlock createBuildArgsBlock(NodeList<Type> args) {
 		var codeBuilder = CodeBlock.builder();
-		codeBuilder.addStatement(
-			"$T<$T>typeArguments = new $T<>()",
-			List.class,
-			TypeArgument.class,
-			ArrayList.class
-		);
+
 		Collection<CodeBlock> argList = new ArrayList<>();
 		args.forEach(
 			arg -> {
@@ -250,12 +256,6 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 					CodeBlock.join(argList, ",")
 				);
 			}
-		);
-
-		codeBuilder.addStatement(
-			"this.value=($L) $T.gen(typeArguments.get(0))",
-			ClassName.bestGuess(args.get(0).asClassOrInterfaceType().getName().toString()),
-			Generators.class
 		);
 
 		return codeBuilder.build();
