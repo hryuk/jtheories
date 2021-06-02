@@ -12,7 +12,6 @@ import com.jtheories.core.generator.processor.JavaWritter;
 import com.sun.source.util.JavacTask;
 import com.sun.source.util.TaskEvent;
 import com.sun.source.util.TaskListener;
-import com.sun.source.util.Trees;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -35,16 +34,13 @@ public class TheoryProcessor extends AbstractProcessor {
 
 		this.javaWritter = new JavaWritter(processingEnv.getFiler());
 		this.javaFileManager = getJavaFileManager(processingEnv);
-		var trees = Trees.instance(processingEnv);
 
 		JavacTask
 			.instance(processingEnv)
 			.addTaskListener(
 				new TaskListener() {
 					@Override
-					public void started(TaskEvent taskEvent) {
-						// Nothing to do on task started event.
-					}
+					public void started(TaskEvent taskEvent) {}
 
 					@Override
 					public void finished(TaskEvent taskEvent) {
@@ -55,7 +51,7 @@ public class TheoryProcessor extends AbstractProcessor {
 							var symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
 							StaticJavaParser.getConfiguration().setSymbolResolver(symbolSolver);
 
-							CompilationUnit cu = null;
+							CompilationUnit cu;
 							try {
 								cu =
 									StaticJavaParser.parse(
@@ -63,6 +59,7 @@ public class TheoryProcessor extends AbstractProcessor {
 									);
 							} catch (IOException e) {
 								e.printStackTrace();
+								throw new IllegalStateException();
 							}
 
 							String className = taskEvent.getCompilationUnit().getSourceFile().getName();
