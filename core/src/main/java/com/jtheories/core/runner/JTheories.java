@@ -1,14 +1,31 @@
 package com.jtheories.core.runner;
 
+import com.jtheories.core.random.SourceOfRandom;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 public class JTheories {
 
+	private long trials = 100L;
+
 	private JTheories() {}
 
+	public static JTheories theory() {
+		return new JTheories();
+	}
+
+	public JTheories withSeed(long seed) {
+		SourceOfRandom.reseed(seed);
+		return this;
+	}
+
+	public JTheories withTrials(long trials) {
+		this.setTrials(trials);
+		return this;
+	}
+
 	@SuppressWarnings("unchecked")
-	public static <T> Theory<T> forAll() {
+	public <T> Theory<T> forAll() {
 		var stackTraceElement = Thread.currentThread().getStackTrace()[2];
 		var theoryClassName = String.format(
 			"Theory_%s_L%d",
@@ -40,6 +57,11 @@ public class JTheories {
 			throw new RuntimeException("Error instancing requested theory", e);
 		}
 
+		((Theory<T>) theory).setNumberOfTrials(this.trials);
 		return (Theory<T>) theory;
+	}
+
+	public void setTrials(long trials) {
+		this.trials = trials;
 	}
 }

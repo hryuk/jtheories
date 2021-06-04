@@ -1,6 +1,7 @@
 package com.jtheories.examples;
 
-import com.jtheories.core.runner.JTheories;
+import static com.jtheories.core.runner.JTheories.theory;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -9,7 +10,7 @@ class VeryRealClassTest {
 	@Test
 	@SuppressWarnings("unused")
 	void doSomethingTest() {
-		JTheories
+		theory()
 			.<VeryRealClass>forAll()
 			.check(
 				veryRealClass -> {

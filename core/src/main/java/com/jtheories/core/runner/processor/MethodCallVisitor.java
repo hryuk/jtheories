@@ -45,16 +45,6 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 		this.javaFileManager = javaFileManager;
 	}
 
-	private boolean isJTheoriesCall(MethodCallExpr methodCallExpr) {
-		return methodCallExpr
-			.getScope()
-			.flatMap(Expression::toMethodCallExpr)
-			.flatMap(MethodCallExpr::getScope)
-			.map(Expression::toString)
-			.map("JTheories"::equals)
-			.orElse(false);
-	}
-
 	private boolean isForAllCall(MethodCallExpr methodCallExpr) {
 		return methodCallExpr
 			.getScope()
@@ -67,7 +57,7 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 
 	@Override
 	public void visit(MethodCallExpr methodCallExpr, Void arg) {
-		if (this.isJTheoriesCall(methodCallExpr) && this.isForAllCall(methodCallExpr)) {
+		if (this.isForAllCall(methodCallExpr)) {
 			methodCallExpr
 				.getScope()
 				.flatMap(
@@ -145,14 +135,11 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 				)
 				.addModifiers(Modifier.PROTECTED)
 				.addStatement(
-					CodeBlock.of(
-						"property.accept(($L) $T.gen(typeArguments.get(0)))",
-						ClassName.bestGuess(
-							args.get(0).asClassOrInterfaceType().getName().toString()
-						),
-						Generators.class
-					)
+					"this.setValue(($L) $T.gen(typeArguments.get(0)))",
+					ClassName.bestGuess(args.get(0).asClassOrInterfaceType().getName().toString()),
+					Generators.class
 				)
+				.addStatement(CodeBlock.of("property.accept(this.getValue())"))
 				.build()
 		);
 

@@ -1,6 +1,7 @@
 package com.jtheories.examples;
 
-import com.jtheories.core.runner.JTheories;
+import static com.jtheories.core.runner.JTheories.theory;
+
 import com.jtheories.junit.JTheoriesParameterResolver;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,7 @@ class ComplexGenericsTest {
 	@Test
 	@SuppressWarnings("unused")
 	void testGenerateComplexGenerics() {
-		JTheories
+		theory()
 			.<ComplexGenerics<Long, Boolean>>forAll()
 			.check(
 				complexGenerics -> {

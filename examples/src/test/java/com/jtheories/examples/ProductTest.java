@@ -1,15 +1,17 @@
 package com.jtheories.examples;
 
-import com.jtheories.core.runner.JTheories;
 import com.jtheories.junit.JTheoriesParameterResolver;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+import static com.jtheories.core.runner.JTheories.theory;
 
 @ExtendWith(JTheoriesParameterResolver.class)
 class ProductTest {
@@ -17,7 +19,7 @@ class ProductTest {
 	@Disabled("Until constrains are added back")
 	@Test
 	void productHasPriceAndName() {
-		JTheories
+		theory()
 			.<Product>forAll()
 			.check(
 				product -> {
@@ -35,7 +37,7 @@ class ProductTest {
 	@Disabled("Until constrains are added back")
 	@Test
 	void freeProductsCostNothing() {
-		JTheories
+		theory()
 			.<@Free Product>forAll()
 			.check(product -> Assertions.assertEquals(0L, product.getPrice()));
 	}
@@ -43,7 +45,7 @@ class ProductTest {
 	@Disabled("Until constrains are added back")
 	@Test
 	void productsHavePriceAndName() {
-		JTheories
+		theory()
 			.<List<Product>>forAll()
 			.check(
 				products ->
@@ -64,7 +66,7 @@ class ProductTest {
 	@Test
 	@Disabled("Until constrains are added back")
 	void productListIsFree() {
-		JTheories
+		theory()
 			.<Collection<@Free Product>>forAll()
 			.check(
 				products -> {
@@ -76,11 +78,14 @@ class ProductTest {
 
 	@Test
 	void productListHaveOrderPrice() {
-		JTheories
+		theory()
+			.withSeed(2744503901576207320L)
+			.withTrials(2L)/* Fails on 3rd trial */
 			.<Collection<Product>>forAll()
 			.check(
 				products -> {
 					Order order = new Order(products);
+					Assertions.assertTrue(order.getTotalPrice() < 0);
 					Assertions.assertTrue(Objects.nonNull(order.getTotalPrice()));
 				}
 			);
@@ -88,13 +93,12 @@ class ProductTest {
 
 	@Test
 	void commetDoesNotBreakThings() {
-		JTheories
+		theory()
 			// comment 1
 			/*comment 2*/.<Collection</*comment 3*/Product>>/*coment 4*/forAll()
 			//comment 5
 			.check(
 				products -> {
-					System.out.println(products);
 					Order order = new Order(products);
 					Assertions.assertTrue(Objects.nonNull(order.getTotalPrice()));
 				}
