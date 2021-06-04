@@ -1,15 +1,15 @@
 package com.jtheories.examples;
 
+import static com.jtheories.core.runner.JTheories.theory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.jtheories.core.runner.JTheories;
 import org.junit.jupiter.api.Test;
 
 class OrderTest {
 
 	@Test
 	void orderPriceIsAccurate() {
-		JTheories
+		theory()
 			.<Order>forAll()
 			.check(
 				order -> {
