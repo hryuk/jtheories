@@ -1,17 +1,16 @@
 package com.jtheories.examples;
 
-import com.jtheories.junit.JTheoriesParameterResolver;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static com.jtheories.core.runner.JTheories.theory;
 
+import com.jtheories.junit.JTheoriesParameterResolver;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-
-import static com.jtheories.core.runner.JTheories.theory;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(JTheoriesParameterResolver.class)
 class ProductTest {
