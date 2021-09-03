@@ -10,6 +10,7 @@ import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.jtheories.core.generator.Generators;
 import com.jtheories.core.generator.meta.TypeArgument;
+import com.jtheories.core.generator.meta.ValuedAnnotation;
 import com.jtheories.core.generator.processor.JavaWritter;
 import com.jtheories.core.runner.Theory;
 import com.squareup.javapoet.*;
@@ -216,6 +217,7 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 		return resultStringBuilder.toString();
 	}
 
+	//TODO: Make this recursive to take into account more than 1 children
 	private CodeBlock createBuildArgsBlock(NodeList<Type> args) {
 		var codeBuilder = CodeBlock.builder();
 
@@ -229,16 +231,26 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 						arguments ->
 							arguments
 								.stream()
-								.map(a -> a.asClassOrInterfaceType().getName().toString())
+								.map(Type::asClassOrInterfaceType)
 								.forEach(
-									a -> argList.add(CodeBlock.of("new TypeArgument<>($L.class)", a))
+									a ->
+										argList.add(
+											CodeBlock.of(
+												"new TypeArgument<>($L.class,$T.of($L))",
+												a.getName().toString(),
+												List.class,
+												getTypeAnnotationListCodeBlock(a)
+											)
+										)
 								)
 					);
 
 				codeBuilder.addStatement(
-					"typeArguments.add(new $T($L.class,new $T<?>[]{$L}))",
+					"typeArguments.add(new $T($L.class,$T.of($L),new $T<?>[]{$L}))",
 					TypeArgument.class,
 					arg.asClassOrInterfaceType().getName().toString(),
+					List.class,
+					getTypeAnnotationListCodeBlock(arg),
 					TypeArgument.class,
 					CodeBlock.join(argList, ",")
 				);
@@ -246,5 +258,25 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 		);
 
 		return codeBuilder.build();
+	}
+
+	private CodeBlock getTypeAnnotationListCodeBlock(Type type) {
+		Collection<CodeBlock> annotationList = new ArrayList<>();
+
+		type
+			.asClassOrInterfaceType()
+			.getAnnotations()
+			.forEach(
+				annotationExpr ->
+					annotationList.add(
+						CodeBlock.of(
+							"$T.builder().annotation($L.class).build()",
+							ValuedAnnotation.class,
+							annotationExpr.getName()
+						)
+					)
+			);
+
+		return CodeBlock.join(annotationList, ",");
 	}
 }

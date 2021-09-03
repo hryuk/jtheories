@@ -47,7 +47,9 @@ public class ValuedAnnotation {
 									try {
 										return method.invoke(annotationInstance);
 									} catch (IllegalAccessException | InvocationTargetException e) {
-										throw new AssertionError("Checked exceptions were a mistake");
+										throw new AssertionError(
+											"Unexpected error calling annotation method"
+										);
 									}
 								}
 							)
