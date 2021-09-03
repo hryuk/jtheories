@@ -14,8 +14,8 @@ public interface LongGenerator {
 		return (long) (random.getRandom().nextFloat() * (Long.MAX_VALUE - 1));
 	}
 
-	@NotMultipleOf10
-	default Long generateNotMultipleOf10(Long arbitraryLong) {
+	@NotMultipleOf
+	default Long generateNotMultipleOf(Long arbitraryLong, long value) {
 		if (arbitraryLong % 10 == 0) {
 			return arbitraryLong + 1;
 		}

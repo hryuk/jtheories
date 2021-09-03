@@ -207,7 +207,14 @@ public class ParameterAssignment {
 				.getElementValues()
 				.entrySet()
 				.stream()
-				.map(entry -> CodeBlock.of(".value($L, $L)", entry.getKey(), entry.getValue()))
+				.map(
+					entry ->
+						CodeBlock.of(
+							".value($S, $L)",
+							entry.getKey().getSimpleName(),
+							entry.getValue()
+						)
+				)
 				.collect(CodeBlock.joining(""))
 		);
 	}

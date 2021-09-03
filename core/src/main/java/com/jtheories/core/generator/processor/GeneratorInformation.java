@@ -1,6 +1,8 @@
 package com.jtheories.core.generator.processor;
 
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.TypeName;
+import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -111,7 +113,11 @@ public class GeneratorInformation {
 	}
 
 	public String getSimpleName(TypeMirror type) {
-		return this.typeUtils.asElement(type).getSimpleName().toString();
+		if (TypeName.get(type).isPrimitive()) {
+			return TypeName.get(type).toString();
+		} else {
+			return this.typeUtils.asElement(type).getSimpleName().toString();
+		}
 	}
 
 	public Types getTypeUtils() {

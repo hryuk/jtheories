@@ -40,7 +40,7 @@ public class GenericGenerateMethod {
 
 		this.generateMethod =
 			MethodSpec
-				.methodBuilder("generate")
+				.methodBuilder("generateBasic")
 				.addModifiers(Modifier.PUBLIC)
 				.addParameter(TypeName.get(TypeArgument.class), "typeArgument")
 				.addCode(codeBlockBuilder.build())

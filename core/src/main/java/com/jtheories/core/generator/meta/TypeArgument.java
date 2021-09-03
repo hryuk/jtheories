@@ -94,7 +94,7 @@ public class TypeArgument<T> {
 	}
 
 	/**
-	 * Obtains a class from an {@link AnnotatedType} if it contains a Class or ParameterizedType, otherwise fail catastrophically
+	 * Obtains a class from an {@link AnnotatedType} if it contains a Class or ParameterizedType
 	 *
 	 * @param annotated an annotated type
 	 * @return the {@link Class} instance of that type
@@ -108,8 +108,7 @@ public class TypeArgument<T> {
 			childClass = (Class<?>) annotated.getType();
 		} else {
 			throw new AssertionError(
-				annotated.getType() +
-				" is not a ParameterizedType nor a Class. What the fuck is it then??"
+				annotated.getType() + " is not a ParameterizedType nor a Class."
 			);
 		}
 		return childClass;

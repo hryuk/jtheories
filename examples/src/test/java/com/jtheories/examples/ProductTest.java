@@ -15,7 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(JTheoriesParameterResolver.class)
 class ProductTest {
 
-	@Disabled("Until constrains are added back")
 	@Test
 	void productHasPriceAndName() {
 		theory()
@@ -33,7 +32,6 @@ class ProductTest {
 			);
 	}
 
-	@Disabled("Until constrains are added back")
 	@Test
 	void freeProductsCostNothing() {
 		theory()
@@ -41,7 +39,6 @@ class ProductTest {
 			.check(product -> Assertions.assertEquals(0L, product.getPrice()));
 	}
 
-	@Disabled("Until constrains are added back")
 	@Test
 	void productsHavePriceAndName() {
 		theory()
@@ -63,7 +60,6 @@ class ProductTest {
 	}
 
 	@Test
-	@Disabled("Until constrains are added back")
 	void productListIsFree() {
 		theory()
 			.<Collection<@Free Product>>forAll()
@@ -76,22 +72,7 @@ class ProductTest {
 	}
 
 	@Test
-	void productListHaveOrderPrice() {
-		theory()
-			.withSeed(2744503901576207320L)
-			.withTrials(2L)/* Fails on 3rd trial */
-			.<Collection<Product>>forAll()
-			.check(
-				products -> {
-					Order order = new Order(products);
-					Assertions.assertTrue(order.getTotalPrice() < 0);
-					Assertions.assertTrue(Objects.nonNull(order.getTotalPrice()));
-				}
-			);
-	}
-
-	@Test
-	void commetDoesNotBreakThings() {
+	void commentDoesNotBreakThings() {
 		theory()
 			// comment 1
 			/*comment 2*/.<Collection</*comment 3*/Product>>/*coment 4*/forAll()

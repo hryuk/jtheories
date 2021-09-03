@@ -1,6 +1,9 @@
 package com.jtheories.core.generator.processor;
 
 import com.jtheories.core.generator.Generator;
+import com.jtheories.core.generator.exceptions.GeneratorProcessorException;
+import com.jtheories.core.generator.processor.constrains.ConstrainedGenerateMethod;
+import com.jtheories.core.generator.processor.constrains.ConstrictorGenerateMethod;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
@@ -10,7 +13,11 @@ import com.squareup.javapoet.TypeSpec;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.annotation.processing.Generated;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 
@@ -64,6 +71,22 @@ public class GeneratorImplementation {
 		List<MethodSpec> generatorMethods = new ArrayList<>();
 
 		generatorMethods.add(new GenericGenerateMethod(this.information).getGenerateMethod());
+		generatorMethods.add(
+			new ConstrainedGenerateMethod(this.information).getGenerateMethod()
+		);
+
+		List<MethodSpec> constrictorMethods =
+			this.information.getGeneratorType()
+				.getEnclosedElements()
+				.stream()
+				.filter(e -> e.getKind() == ElementKind.METHOD)
+				.filter(e -> e.getAnnotationMirrors().size() == 1)
+				.map(ExecutableElement.class::cast)
+				.map(this::createArbitraryConstrictorMethod)
+				.map(ConstrictorGenerateMethod::getGeneratedMethod)
+				.collect(Collectors.toList());
+
+		generatorMethods.addAll(constrictorMethods);
 
 		var typeBuilder = TypeSpec
 			.classBuilder(this.information.getImplementerName())
@@ -79,5 +102,20 @@ public class GeneratorImplementation {
 			.addMethods(generatorMethods);
 
 		return typeBuilder.build();
+	}
+
+	private ConstrictorGenerateMethod createArbitraryConstrictorMethod(
+		ExecutableElement executableElement
+	) {
+		var constrictorAnnotation = executableElement
+			.getAnnotationMirrors()
+			.get(0)
+			.getAnnotationType()
+			.asElement();
+		return new ConstrictorGenerateMethod(
+			this.information,
+			constrictorAnnotation,
+			executableElement
+		);
 	}
 }

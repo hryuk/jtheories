@@ -11,5 +11,6 @@ import java.lang.annotation.Target;
 @Target({ PARAMETER, METHOD })
 @Retention(RUNTIME)
 @GeneratorConstrain
-public @interface NotMultipleOf10 {
+public @interface NotMultipleOf {
+	long value() default 0;
 }
