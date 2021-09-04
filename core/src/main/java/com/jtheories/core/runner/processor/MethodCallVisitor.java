@@ -270,23 +270,26 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 					Map<String, String> annotationValues = new HashMap<>();
 					if (annotationExpr instanceof SingleMemberAnnotationExpr) {
 						var singleMemberAnnotation = (SingleMemberAnnotationExpr) annotationExpr;
-						annotationValues.put("value",singleMemberAnnotation.getMemberValue().toString());
-						annotationList.add(
-								CodeBlock.of(
-										"$T.builder().annotation($L.class).value($S,$L).build()",
-										ValuedAnnotation.class,
-										annotationExpr.getName(),
-										annotationValues.keySet().stream().findAny().orElseThrow(),
-										annotationValues.values().stream().findAny().orElseThrow()
-								)
+						annotationValues.put(
+							"value",
+							singleMemberAnnotation.getMemberValue().toString()
 						);
-					}else{
 						annotationList.add(
-								CodeBlock.of(
-										"$T.builder().annotation($L.class).build()",
-										ValuedAnnotation.class,
-										annotationExpr.getName()
-								)
+							CodeBlock.of(
+								"$T.builder().annotation($L.class).value($S,$L).build()",
+								ValuedAnnotation.class,
+								annotationExpr.getName(),
+								annotationValues.keySet().stream().findAny().orElseThrow(),
+								annotationValues.values().stream().findAny().orElseThrow()
+							)
+						);
+					} else {
+						annotationList.add(
+							CodeBlock.of(
+								"$T.builder().annotation($L.class).build()",
+								ValuedAnnotation.class,
+								annotationExpr.getName()
+							)
 						);
 					}
 				}
