@@ -16,7 +16,7 @@ public interface LongGenerator {
 
 	@NotMultipleOf
 	default Long generateNotMultipleOf(Long arbitraryLong, long value) {
-		if (arbitraryLong % 10 == 0) {
+		if (arbitraryLong % value == 0) {
 			return arbitraryLong + 1;
 		}
 		return arbitraryLong;

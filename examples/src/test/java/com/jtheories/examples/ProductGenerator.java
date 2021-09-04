@@ -15,6 +15,11 @@ public interface ProductGenerator {
 		return new Product(id, name, price);
 	}
 
+	@Price
+	default Product generatePrice(Product product, long price) {
+		return new Product(product.getId(), product.getName(), price);
+	}
+
 	@Free
 	default Product generateFree(Product product) {
 		return new Product(product.getId(), product.getName(), 0L);

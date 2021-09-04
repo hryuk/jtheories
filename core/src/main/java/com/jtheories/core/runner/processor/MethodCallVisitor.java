@@ -6,6 +6,7 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.SimpleName;
+import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.jtheories.core.generator.Generators;
@@ -19,9 +20,7 @@ import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.lang.model.element.Modifier;
@@ -267,14 +266,33 @@ class MethodCallVisitor extends VoidVisitorAdapter<Void> {
 			.asClassOrInterfaceType()
 			.getAnnotations()
 			.forEach(
-				annotationExpr ->
-					annotationList.add(
-						CodeBlock.of(
-							"$T.builder().annotation($L.class).build()",
-							ValuedAnnotation.class,
-							annotationExpr.getName()
-						)
-					)
+				annotationExpr -> {
+					Map<String, String> annotationValues = new HashMap<>();
+					if (annotationExpr instanceof SingleMemberAnnotationExpr) {
+						var singleMemberAnnotation = (SingleMemberAnnotationExpr) annotationExpr;
+						annotationValues.put(
+							"value",
+							singleMemberAnnotation.getMemberValue().toString()
+						);
+						annotationList.add(
+							CodeBlock.of(
+								"$T.builder().annotation($L.class).value($S,$L).build()",
+								ValuedAnnotation.class,
+								annotationExpr.getName(),
+								annotationValues.keySet().stream().findAny().orElseThrow(),
+								annotationValues.values().stream().findAny().orElseThrow()
+							)
+						);
+					} else {
+						annotationList.add(
+							CodeBlock.of(
+								"$T.builder().annotation($L.class).build()",
+								ValuedAnnotation.class,
+								annotationExpr.getName()
+							)
+						);
+					}
+				}
 			);
 
 		return CodeBlock.join(annotationList, ",");

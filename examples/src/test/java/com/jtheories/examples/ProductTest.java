@@ -40,6 +40,20 @@ class ProductTest {
 	}
 
 	@Test
+	void productsHaveNotRoundedPrice() {
+		theory()
+			.<Product>forAll()
+			.check(product -> Assertions.assertNotSame(0L, product.getPrice() % 10));
+	}
+
+	@Test
+	void productsHaveSpecifiedPrice() {
+		theory()
+			.<@Price(42) Product>forAll()
+			.check(product -> Assertions.assertEquals(42, product.getPrice()));
+	}
+
+	@Test
 	void productsHavePriceAndName() {
 		theory()
 			.<List<Product>>forAll()
