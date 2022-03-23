@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(JTheoriesParameterResolver.class)
 class ProductTest {
 
 	@Test
@@ -49,8 +48,15 @@ class ProductTest {
 	@Test
 	void productsHaveSpecifiedPrice() {
 		theory()
-			.<@Price(42) Product>forAll()
+			.<@Price(42L) Product>forAll()
 			.check(product -> Assertions.assertEquals(42, product.getPrice()));
+	}
+
+	@Test
+	void productsHaveSpecifiedName() {
+		theory()
+			.<@Name("TEST") Product>forAll()
+			.check(product -> Assertions.assertEquals("TEST", product.getName()));
 	}
 
 	@Test

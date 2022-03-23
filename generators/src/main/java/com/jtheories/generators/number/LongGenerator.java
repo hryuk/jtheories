@@ -1,5 +1,7 @@
 package com.jtheories.generators.number;
 
+import com.jtheories.core.generator.meta.Constrain;
+import com.jtheories.core.generator.meta.GeneratorAnnotations;
 import com.jtheories.core.generator.processor.Generator;
 import com.jtheories.core.random.SourceOfRandom;
 
@@ -15,8 +17,12 @@ public interface LongGenerator {
 	}
 
 	@NotMultipleOf
-	default Long generateNotMultipleOf(Long arbitraryLong, long value) {
-		if (arbitraryLong % value == 0) {
+	default Long generateNotMultipleOf(
+		Long arbitraryLong,
+		GeneratorAnnotations annotations
+	) {
+		long multiple = annotations.get(NotMultipleOf.class);
+		if (arbitraryLong % multiple == 0) {
 			return arbitraryLong + 1;
 		}
 		return arbitraryLong;

@@ -1,6 +1,7 @@
 package com.jtheories.core.generator.processor.constrains;
 
 import com.jtheories.core.generator.Generators;
+import com.jtheories.core.generator.meta.GeneratorAnnotations;
 import com.jtheories.core.generator.meta.TypeArgument;
 import com.jtheories.core.generator.meta.ValuedAnnotation;
 import com.jtheories.core.generator.processor.GenerateMethod;
@@ -62,12 +63,13 @@ public class ConstrainedGenerateMethod {
 				.beginControlFlow("for($T method : generatorMethods)", Method.class)
 				.addStatement(
 					"Object[] parameterValues = $T.stream(method.getParameterTypes())\n" +
-					".filter($T.not(Class::isPrimitive) )\n" +
+					".filter($T.not($T.class::equals) )\n" +
 					".map(TypeArgument::new)\n" +
 					".map($T::gen)\n" +
 					".toArray(Object[]::new)",
 					Arrays.class,
 					Predicate.class,
+					GeneratorAnnotations.class,
 					Generators.class
 				)
 				.addStatement("methodParameters.put(method.getName(),parameterValues)")
@@ -94,13 +96,17 @@ public class ConstrainedGenerateMethod {
 					"                 $T.concat(" +
 					"Arrays.stream(methodParameters.get(constrictorName))\n" +
 					"                     .map(p -> p.getClass().equals($T.class)? finalConstrained$N :p),\n" +
-					"Arrays.stream(annotation.getValues().values().toArray()))\n" +
+					"annotation.getValues().size()>0 ? $T.of(new $T($T.of(annotation))) : $T.of())\n" +
 					"                 .toArray(Object[]::new))",
 					generatedClassName,
 					returnType,
 					Stream.class,
 					returnType,
-					generatedClassName
+					generatedClassName,
+					Stream.class,
+					GeneratorAnnotations.class,
+					List.class,
+					Stream.class
 				)
 				.nextControlFlow(
 					"catch ($T|$T e)",
