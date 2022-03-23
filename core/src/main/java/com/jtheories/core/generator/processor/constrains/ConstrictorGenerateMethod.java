@@ -1,12 +1,11 @@
 package com.jtheories.core.generator.processor.constrains;
 
-import com.jtheories.core.generator.exceptions.GeneratorProcessorException;
-import com.jtheories.core.generator.processor.GenerateMethod;
+import com.jtheories.core.generator.processor.ConstrictorMethod;
 import com.jtheories.core.generator.processor.GeneratorInformation;
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
-import java.util.Objects;
 import java.util.stream.IntStream;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -22,7 +21,7 @@ public class ConstrictorGenerateMethod {
 		Element annotation,
 		ExecutableElement defaultMethod
 	) {
-		var name = "generate" + annotation.getSimpleName();
+		var name = defaultMethod.getSimpleName().toString();
 
 		var methodBuilder = MethodSpec
 			.methodBuilder(name)
@@ -37,10 +36,7 @@ public class ConstrictorGenerateMethod {
 					String.format("arbitrary%s", information.getSimpleName(parameter.asType()))
 				);
 			} else {
-				methodBuilder.addParameter(
-					TypeName.get(parameter.asType()),
-					String.format("annotationValue%d", index)
-				);
+				methodBuilder.addParameter(TypeName.get(parameter.asType()), "annotations");
 			}
 			index++;
 		}
@@ -61,7 +57,7 @@ public class ConstrictorGenerateMethod {
 									information.getSimpleName(defaultMethod.getParameters().get(i).asType())
 								);
 							} else {
-								return CodeBlock.of(String.format("annotationValue%d", i));
+								return CodeBlock.of("annotations");
 							}
 						}
 					)
@@ -71,7 +67,8 @@ public class ConstrictorGenerateMethod {
 
 		methodBuilder.addCode(methodCode);
 
-		methodBuilder.addAnnotation(GenerateMethod.class);
+		methodBuilder.addAnnotation(ConstrictorMethod.class);
+		methodBuilder.addAnnotation(ClassName.bestGuess(annotation.asType().toString()));
 
 		this.generatedMethod = methodBuilder.build();
 	}

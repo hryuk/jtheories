@@ -8,5 +8,5 @@ import java.lang.annotation.Target;
 
 @Target({ METHOD })
 @Retention(RUNTIME)
-public @interface GenerateMethod {
+public @interface ConstrictorMethod {
 }

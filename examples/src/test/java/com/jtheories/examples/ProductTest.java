@@ -60,6 +60,18 @@ class ProductTest {
 	}
 
 	@Test
+	void productsHaveSpecifiedNameAndPrice() {
+		theory()
+			.<@Name("TEST") @Price(42L) Product>forAll()
+			.check(
+				product -> {
+					Assertions.assertEquals("TEST", product.getName());
+					Assertions.assertEquals(42, product.getPrice());
+				}
+			);
+	}
+
+	@Test
 	void productsHavePriceAndName() {
 		theory()
 			.<List<Product>>forAll()

@@ -4,11 +4,10 @@ import com.jtheories.core.generator.Generators;
 import com.jtheories.core.generator.meta.GeneratorAnnotations;
 import com.jtheories.core.generator.meta.TypeArgument;
 import com.jtheories.core.generator.meta.ValuedAnnotation;
-import com.jtheories.core.generator.processor.GenerateMethod;
+import com.jtheories.core.generator.processor.ConstrictorMethod;
 import com.jtheories.core.generator.processor.GeneratorInformation;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -54,10 +53,10 @@ public class ConstrainedGenerateMethod {
 				.beginControlFlow("if(annotations.size() > 0 )")
 				.addStatement(
 					"$T<Method> generatorMethods = Arrays.stream(this.getClass().getDeclaredMethods())\n" +
-					"              .filter(m -> m.isAnnotationPresent($T.class))\n\n" +
+					"              .filter(m -> m.isAnnotationPresent($T.class))\n" +
 					"              .collect($T.toList())",
 					List.class,
-					GenerateMethod.class,
+					ConstrictorMethod.class,
 					Collectors.class
 				)
 				.beginControlFlow("for($T method : generatorMethods)", Method.class)
@@ -78,7 +77,12 @@ public class ConstrainedGenerateMethod {
 				.addCode("\n")
 				.beginControlFlow("for($T annotation:annotations)", ValuedAnnotation.class)
 				.addStatement(
-					"String constrictorName = String.format(\"generate%s\",annotation.getAnnotation().getSimpleName())"
+					"String constrictorName = $T.stream(this.getClass().getDeclaredMethods())\n" +
+					"          .filter(m -> m.isAnnotationPresent(annotation.getAnnotation()))\n" +
+					"          .map($T::getName)\n" +
+					"          .findAny().orElseThrow();",
+					Arrays.class,
+					Method.class
 				)
 				.addStatement(
 					"$T finalConstrained$N = constrained$N",
